@@ -1,7 +1,9 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
 <!-- END:nextjs-agent-rules -->
 
 ## Stack
@@ -16,6 +18,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Babel React Compiler** plugin (`babel-plugin-react-compiler@1.0.0`).
 
 Local docs (read these before changing framework-touching code):
+
 - `node_modules/next/dist/docs/01-app/` — App Router (the one we use)
 - `node_modules/next/dist/docs/02-pages/` — Pages Router (we do **not** use it)
 - `node_modules/next/dist/docs/03-architecture/`, `04-community/`, `index.md`
@@ -35,7 +38,7 @@ public/                 # Static assets served at /
 .specs/                 # Living specs and PBIs (Spec → Plan → Build pipeline)
 .claude/
   commands/             # Slash command definitions
-  skills/               # Persona definitions (Analyst, Lead, Dev, Critic)
+  agents/               # Persona subagents (Analyst, Lead, Dev, Critic) — dispatched via the Agent tool
 next.config.ts          # reactCompiler: true
 eslint.config.mjs       # Flat config
 prettier.config.mjs     # Tailwind plugin + tailwindFunctions
@@ -66,10 +69,11 @@ Quality gate inside `/build` is: `lint` + `tsc --noEmit` (implicit via Next/TS) 
 - **No `--no-verify`, no `// @ts-ignore`, no skipped tests** to make a gate pass (factory rule).
 
 ## Personas
-Invoke via skill files: `@Analyst`, `@Lead`, `@Dev`, `@Critic`.
-Definitions: `.claude/skills/`. Loaded session-scoped by the relevant slash command — do not preload.
+
+Subagents in `.claude/agents/`: `analyst`, `lead`, `dev`, `critic` (referenced as `@Analyst`, `@Lead`, `@Dev`, `@Critic`). Slash commands dispatch to them via the Agent tool — each runs in its own context window with a tool allowlist that enforces persona boundaries (e.g. `critic` has no Edit/Write). The main thread orchestrates and relays results; do not preload agent files.
 
 ## Slash commands
+
 Factory pipeline (Discover → Define → Spec → Assemble → Run):
 `/discover`, `/challenge`, `/spec`, `/plan`, `/build`, `/review`, `/ship`, `/learn`. Reference card: `/cheat-sheet`.
 Definitions: `.claude/commands/`. Specs and PBIs live under `.specs/`.
