@@ -16,10 +16,12 @@ Pipeline: **Discover → Define → Spec → Assemble → Run**, with adversaria
 | `/challenge <intake>`                    | Define gate     | `@Critic`           | Before writing any spec                        | Adversarially attack the problem statement. Returns `PASS` or numbered objections.                                                                                       |
 | `/spec create\|reverse\|update <domain>` | Spec            | `@Lead`             | Write/refresh a living spec                    | Produces `.specs/<domain>/spec.md` with Blueprint + Contract + Gherkin.                                                                                                  |
 | `/plan <domain>`                         | Spec → Assemble | `@Lead`             | Break the spec into work units                 | Writes atomic, isolated, self-testable PBIs to `.specs/<domain>/pbi/`.                                                                                                   |
+| `/challenge-plan <domain>`               | Plan gate       | `@Critic`           | Before writing any code                        | Adversarially attack the PBI set (atomicity, isolation, self-testability, coverage). Returns `PASS` or numbered objections.                                              |
 | `/build <pbi-id>`                        | Assemble        | `@Dev`              | Implement one PBI                              | In-session Ralph Loop: edits + `lint` + `tsc` + `test:run`, max 10 iterations, micro-commits.                                                                            |
 | `/review <pbi-id>`                       | Assemble gate   | `@Critic`           | Adversarial code review                        | Fresh `critic` subagent reads only spec + diff. Returns `PASS`, violations, or `SPEC AMBIGUOUS`.                                                                         |
 | `/ship <pbi-id>`                         | Acceptance      | human (main thread) | Open the PR                                    | Strategic-fit checklist, awaits explicit human approval, then pushes + opens PR. Stays in main thread (no subagent) for the approval gate. Only command touching remote. |
 | `/learn <signal>`                        | Run → Discover  | `@Analyst`          | Production bug, metric, incident               | Routes signal back into spec amendment, new intake, or regression guardrail.                                                                                             |
+| `/factory <signal>`                      | Orchestrator    | main thread         | Run the whole pipeline end-to-end              | Runs the double diamond: dispatches the commands above, pauses at diamond boundaries (`/challenge` PASS, before `/ship`). `--auto` collapses pauses except `/ship`.      |
 | `/cheat-sheet`                           | —               | —                   | This card                                      | Prints this reference.                                                                                                                                                   |
 
 ## Typical end-to-end flow
@@ -29,19 +31,22 @@ Pipeline: **Discover → Define → Spec → Assemble → Run**, with adversaria
    → /challenge .specs/_intake/<slug>.md
         → (if PASS)  /spec create <domain>
               → /plan <domain>
-                    → /build <pbi-id>
-                          → /review <pbi-id>
-                                → (if PASS) /ship <pbi-id>
-                                → (if violations) /build <pbi-id>   # loop
-                                → (if SPEC AMBIGUOUS) /spec update <domain>
+                    → /challenge-plan <domain>
+                          → (if PASS) /build <pbi-id>
+                                → /review <pbi-id>
+                                      → (if PASS) /ship <pbi-id>
+                                      → (if violations) /build <pbi-id>   # loop
+                                      → (if SPEC AMBIGUOUS) /spec update <domain>
+                          → (if objections) /plan <domain>   # or /spec update <domain>
    (later, in production) /learn <signal>   # feeds back to top
 ```
 
 ## Gate semantics
 
 - **Quality gates** (deterministic): auto-enforced **inside** `/build`. Loop on failure, hard cap 10 iterations.
-- **Review gates** (probabilistic): `/challenge` and `/review`. Always fresh session. User decides whether to loop back on FAIL.
+- **Review gates** (probabilistic): `/challenge`, `/challenge-plan`, and `/review`. Always fresh session. User decides whether to loop back on FAIL.
 - **Acceptance gate** (human): `/ship`. No auto-anything. Explicit approval required.
+- **Orchestration**: `/factory <signal>` runs the whole pipeline as a double diamond — pauses at the convergence of each diamond (after `/challenge` PASS; before `/ship`). `/challenge-plan` is an internal D2 checkpoint and only halts on objections.
 
 ## Rules baked into the personas
 

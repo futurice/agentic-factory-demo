@@ -75,5 +75,7 @@ Subagents in `.claude/agents/`: `analyst`, `lead`, `dev`, `critic` (referenced a
 ## Slash commands
 
 Factory pipeline (Discover → Define → Spec → Assemble → Run):
-`/discover`, `/challenge`, `/spec`, `/plan`, `/build`, `/review`, `/ship`, `/learn`. Reference card: `/cheat-sheet`.
+`/discover`, `/challenge`, `/spec`, `/plan`, `/challenge-plan`, `/build`, `/review`, `/ship`, `/learn`. End-to-end orchestrator: `/factory`. Reference card: `/cheat-sheet`.
+
+The pipeline is the **agentic double diamond**: Diamond 1 (Problem Space) refines `/discover` → `/challenge` → `/spec`; Diamond 2 (Solution Space) refines `/plan` → `/challenge-plan` → `/build` → `/review`; `/learn` closes the Run-phase loopback. `/factory` walks this end-to-end and pauses only at diamond boundaries — see `/cheat-sheet` for the flow.
 Definitions: `.claude/commands/`. Specs and PBIs live under `.specs/`.
