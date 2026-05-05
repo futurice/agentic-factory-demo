@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 920" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#374151"/>
+    </marker>
+    <marker id="ah-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/>
+    </marker>
+    <style>
+      .node text { text-anchor: middle; }
+      .cmd { font-size: 14px; font-weight: 600; }
+      .persona { font-size: 12px; }
+      .edge { fill: none; stroke: #374151; stroke-width: 1.5; marker-end: url(#ah); }
+      .edge-d { fill: none; stroke: #6b7280; stroke-width: 1.5; stroke-dasharray: 5,4; marker-end: url(#ah-d); }
+      .lbl { font-size: 11px; fill: #374151; text-anchor: middle;
+             paint-order: stroke; stroke: #ffffff; stroke-width: 4; stroke-linejoin: round; }
+      .title { font-size: 16px; font-weight: 700; fill: #111827; }
+    </style>
+  </defs>
+
+  <text class="title" x="40" y="32" text-anchor="start">Agentic factory pipeline</text>
+
+  <!-- ===== Forward edges (solid) ===== -->
+  <line class="edge" x1="300" y1="70"  x2="300" y2="118"/>
+  <text class="lbl" x="338" y="98">raw signal</text>
+
+  <line class="edge" x1="300" y1="178" x2="300" y2="218"/>
+  <text class="lbl" x="333" y="202">intake.md</text>
+
+  <line class="edge" x1="300" y1="278" x2="300" y2="318"/>
+  <text class="lbl" x="320" y="302">PASS</text>
+
+  <line class="edge" x1="300" y1="378" x2="300" y2="418"/>
+  <text class="lbl" x="328" y="402">spec.md</text>
+
+  <line class="edge" x1="300" y1="478" x2="300" y2="518"/>
+  <text class="lbl" x="316" y="502">PBIs</text>
+
+  <line class="edge" x1="300" y1="578" x2="300" y2="618"/>
+  <text class="lbl" x="324" y="602">commits</text>
+
+  <line class="edge" x1="300" y1="678" x2="300" y2="718"/>
+  <text class="lbl" x="320" y="702">PASS</text>
+
+  <line class="edge" x1="300" y1="778" x2="300" y2="828"/>
+
+  <line class="edge" x1="380" y1="850" x2="528" y2="850"/>
+  <text class="lbl" x="454" y="843">signal</text>
+
+  <!-- ===== Back-edges (dashed) ===== -->
+  <!-- challenge -> discover : objections -->
+  <path class="edge-d" d="M 190 240 C 110 240, 110 150, 190 150"/>
+  <text class="lbl" x="92" y="198">objections</text>
+
+  <!-- review -> build : violations -->
+  <path class="edge-d" d="M 190 640 C 110 640, 110 550, 190 550"/>
+  <text class="lbl" x="92" y="598">violations</text>
+
+  <!-- review -> spec : SPEC AMBIGUOUS (longer leftward sweep) -->
+  <path class="edge-d" d="M 190 660 C 40 640, 40 360, 190 350"/>
+  <text class="lbl" x="32" y="505">SPEC AMBIGUOUS</text>
+
+  <!-- learn -> spec : spec amendment / regression -->
+  <path class="edge-d" d="M 560 822 C 480 720, 470 460, 410 350"/>
+  <text class="lbl" x="490" y="568">spec amendment</text>
+  <text class="lbl" x="490" y="582">/ regression</text>
+
+  <!-- learn -> challenge : new intake (longer upward curve) -->
+  <path class="edge-d" d="M 620 822 C 620 480, 520 280, 410 250"/>
+  <text class="lbl" x="608" y="450">new intake</text>
+
+  <!-- ===== Nodes ===== -->
+  <!-- signal (stadium) -->
+  <g class="node">
+    <rect x="220" y="30" width="160" height="40" rx="20" ry="20" fill="#f3f4f6" stroke="#4b5563" stroke-width="2"/>
+    <text x="300" y="55" font-size="13" fill="#111827">Raw signal</text>
+  </g>
+
+  <!-- /discover @Analyst -->
+  <g class="node">
+    <rect x="190" y="122" width="220" height="56" rx="8" fill="#e0f2fe" stroke="#0369a1" stroke-width="2"/>
+    <text class="cmd" x="300" y="146" fill="#0c4a6e">/discover</text>
+    <text class="persona" x="300" y="164" fill="#0c4a6e">@Analyst</text>
+  </g>
+
+  <!-- /challenge @Critic -->
+  <g class="node">
+    <rect x="190" y="222" width="220" height="56" rx="8" fill="#fee2e2" stroke="#b91c1c" stroke-width="2"/>
+    <text class="cmd" x="300" y="246" fill="#7f1d1d">/challenge</text>
+    <text class="persona" x="300" y="264" fill="#7f1d1d">@Critic</text>
+  </g>
+
+  <!-- /spec @Lead -->
+  <g class="node">
+    <rect x="190" y="322" width="220" height="56" rx="8" fill="#fef3c7" stroke="#a16207" stroke-width="2"/>
+    <text class="cmd" x="300" y="346" fill="#713f12">/spec</text>
+    <text class="persona" x="300" y="364" fill="#713f12">@Lead</text>
+  </g>
+
+  <!-- /plan @Lead -->
+  <g class="node">
+    <rect x="190" y="422" width="220" height="56" rx="8" fill="#fef3c7" stroke="#a16207" stroke-width="2"/>
+    <text class="cmd" x="300" y="446" fill="#713f12">/plan</text>
+    <text class="persona" x="300" y="464" fill="#713f12">@Lead</text>
+  </g>
+
+  <!-- /build @Dev -->
+  <g class="node">
+    <rect x="190" y="522" width="220" height="56" rx="8" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <text class="cmd" x="300" y="546" fill="#14532d">/build</text>
+    <text class="persona" x="300" y="564" fill="#14532d">@Dev — Ralph Loop ≤10</text>
+  </g>
+
+  <!-- /review @Critic -->
+  <g class="node">
+    <rect x="190" y="622" width="220" height="56" rx="8" fill="#fee2e2" stroke="#b91c1c" stroke-width="2"/>
+    <text class="cmd" x="300" y="646" fill="#7f1d1d">/review</text>
+    <text class="persona" x="300" y="664" fill="#7f1d1d">@Critic</text>
+  </g>
+
+  <!-- /ship (human) -->
+  <g class="node">
+    <rect x="190" y="722" width="220" height="56" rx="8" fill="#f3e8ff" stroke="#7e22ce" stroke-width="2"/>
+    <text class="cmd" x="300" y="746" fill="#581c87">/ship</text>
+    <text class="persona" x="300" y="764" fill="#581c87">human gate</text>
+  </g>
+
+  <!-- prod (stadium) -->
+  <g class="node">
+    <rect x="220" y="830" width="160" height="40" rx="20" ry="20" fill="#f3f4f6" stroke="#4b5563" stroke-width="2"/>
+    <text x="300" y="855" font-size="13" fill="#111827">Production</text>
+  </g>
+
+  <!-- /learn @Analyst -->
+  <g class="node">
+    <rect x="530" y="822" width="220" height="56" rx="8" fill="#e0f2fe" stroke="#0369a1" stroke-width="2"/>
+    <text class="cmd" x="640" y="846" fill="#0c4a6e">/learn</text>
+    <text class="persona" x="640" y="864" fill="#0c4a6e">@Analyst</text>
+  </g>
+
+  <!-- ===== Legend ===== -->
+  <g transform="translate(530, 60)">
+    <text x="0" y="0" font-size="13" font-weight="600" fill="#111827">Personas</text>
+    <g transform="translate(0, 16)">
+      <rect x="0" y="0" width="14" height="14" rx="3" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.5"/>
+      <text x="22" y="11" font-size="11" fill="#0c4a6e">@Analyst — discover, learn</text>
+    </g>
+    <g transform="translate(0, 36)">
+      <rect x="0" y="0" width="14" height="14" rx="3" fill="#fee2e2" stroke="#b91c1c" stroke-width="1.5"/>
+      <text x="22" y="11" font-size="11" fill="#7f1d1d">@Critic — challenge, review</text>
+    </g>
+    <g transform="translate(0, 56)">
+      <rect x="0" y="0" width="14" height="14" rx="3" fill="#fef3c7" stroke="#a16207" stroke-width="1.5"/>
+      <text x="22" y="11" font-size="11" fill="#713f12">@Lead — spec, plan</text>
+    </g>
+    <g transform="translate(0, 76)">
+      <rect x="0" y="0" width="14" height="14" rx="3" fill="#dcfce7" stroke="#15803d" stroke-width="1.5"/>
+      <text x="22" y="11" font-size="11" fill="#14532d">@Dev — build</text>
+    </g>
+    <g transform="translate(0, 96)">
+      <rect x="0" y="0" width="14" height="14" rx="3" fill="#f3e8ff" stroke="#7e22ce" stroke-width="1.5"/>
+      <text x="22" y="11" font-size="11" fill="#581c87">human gate — ship</text>
+    </g>
+
+    <text x="0" y="130" font-size="13" font-weight="600" fill="#111827">Edges</text>
+    <g transform="translate(0, 146)">
+      <line x1="0" y1="6" x2="22" y2="6" stroke="#374151" stroke-width="1.5" marker-end="url(#ah)"/>
+      <text x="32" y="11" font-size="11" fill="#374151">happy path</text>
+    </g>
+    <g transform="translate(0, 166)">
+      <line x1="0" y1="6" x2="22" y2="6" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#ah-d)"/>
+      <text x="32" y="11" font-size="11" fill="#374151">feedback / failure</text>
+    </g>
+  </g>
+</svg>

@@ -49,22 +49,39 @@ tsconfig.json           # strict, @/* alias
 
 ## Architecture
 
-This is a **teaching sandbox** for agentic coding, edited by many developers in parallel. Architecture optimizes for **legibility, isolation, and low merge-conflict surface** — not for production scale or DRY reuse.
+This is a **practice platform** for agentic coding. Learners build small widgets based on their own ideas — experimenting with prompts, agents, slash commands, and the factory pipeline against real Next.js code. The repo is **not a tutorial**: there are no lessons, no prescribed exercises, and no "right answer" the platform is steering anyone toward. Its job is to stay out of the way while many learners hack on independent widgets in parallel, without breaking each other or the framework.
 
-- **Demos are self-contained.** Each lesson/exercise lives in its own folder under `src/app/demos/<demo-name>/` with its `page.tsx`, components, and tests colocated. Everything a demo needs sits inside its folder.
-- **Duplicate freely; do not DRY across demos.** Shared `lib/`, shared UI primitives, and cross-demo imports become merge-conflict hotspots and let one dev's refactor break everyone else's lesson. If two demos look similar, leave them similar — each demo must remain deletable in one `rm -rf`.
-- **No shared mutable state across demos.** No global store, no shared DB schema, no cross-demo imports. A broken demo must not cascade.
+Architecture optimizes for **isolation, parallelism, and sensible Next.js conventions** — not production scale, not DRY reuse, not pedagogy.
+
+- **Widgets are self-contained.** Each widget lives in its own folder under `src/app/widgets/<widget-name>/` with its `page.tsx`, components, and tests colocated. Everything a widget needs sits inside its folder.
+- **Duplicate freely; do not DRY across widgets.** Shared `lib/`, shared UI primitives, and cross-widget imports become merge-conflict hotspots and let one learner's refactor break someone else's widget. If two widgets look similar, leave them similar — each widget must remain deletable in one `rm -rf`.
+- **No shared mutable state across widgets.** No global store, no shared DB schema, no cross-widget imports. A broken widget must not cascade.
 - **`lib/` stays tiny and stable.** Only truly universal utilities (e.g. `cn()`, env access). Treat additions to `lib/` as a load-bearing decision, not a convenience.
-- **Flat beats clever.** A new dev or agent should answer "where does this go?" in <30 seconds from `AGENTS.md` + `ls src/app/`. Do not introduce `features/`, `server/`, or layered directories until there is concrete demand.
-- **Architecture is pedagogy.** The shape devs see here is the shape they will learn to build. Model agent-friendly patterns: explicit conventions, predictable file locations, `AGENTS.md` as the contract, specs in `.specs/`.
+- **Sensible Next.js, no exotic layering.** App Router only, server components by default, `next/font` for fonts, Tailwind utilities first, `@/*` alias for imports. Do not introduce `features/`, `server/`, or other layered directories. A new learner or agent should answer "where does this go?" in <30 seconds from `AGENTS.md` + `ls src/app/widgets/`.
+- **Flat beats clever.** The repo shape is deliberately boring; the interesting part is what learners do inside their widget folder.
+
+### Requirements in a practice platform
+
+The learner is the stakeholder. Whatever the learner wants to build — a Pomodoro timer, a BTC/EUR converter, a chess clock, a sketchpad — is a legitimate source of requirements. There are no real end users, no production signals, no curriculum, and no instructor brief.
+
+That changes what evidence means at the `/challenge` gate. The legitimate source of an "ask" is **the learner's own stated intent**, captured in the intake as a quoted goal. The Critic does **not** demand external evidence ("did a real user ask for this?") because none exists or is relevant.
+
+The Critic still gates on:
+
+- **Coherence** — is the learner's stated intent internally consistent with what's being proposed?
+- **Scope** — is this still a single widget, deletable in one `rm -rf`, not bundling unrelated ideas?
+- **Next.js architecture** — does the proposal stay within App Router conventions, server-first defaults, the `@/*` alias, no exotic layering?
+- **Alternatives** — is there a simpler shape that still satisfies the learner's intent?
+
+Objections of the form "no user asked for X" or "this widget doesn't teach anything" are **not** valid blockers in this repo.
 
 Target shape:
 
 ```
 src/
   app/
-    page.tsx              # Index / catalog of demos
-    demos/<demo>/         # Self-contained: page.tsx + components + tests
+    page.tsx              # Index / catalog of widgets
+    widgets/<widget>/     # Self-contained: page.tsx + components + tests
   lib/                    # Universal only: cn(), env — kept tiny
 ```
 
@@ -98,3 +115,42 @@ Subagents in `.claude/agents/`: `analyst`, `lead`, `dev`, `critic` (referenced a
 Factory pipeline (Discover → Define → Spec → Assemble → Run):
 `/discover`, `/challenge`, `/spec`, `/plan`, `/build`, `/review`, `/ship`, `/learn`. Reference card: `/cheat-sheet`.
 Definitions: `.claude/commands/`. Specs and PBIs live under `.specs/`.
+
+### Pipeline diagram
+
+Solid arrows are the happy path; dotted arrows are feedback / failure edges. Node colors group by persona.
+
+```mermaid
+flowchart TD
+    signal([Raw signal]) --> discover
+
+    discover["/discover<br/>@Analyst"]:::analyst
+    challenge["/challenge<br/>@Critic"]:::critic
+    spec["/spec<br/>@Lead"]:::lead
+    plan["/plan<br/>@Lead"]:::lead
+    build["/build<br/>@Dev — Ralph Loop ≤10"]:::dev
+    review["/review<br/>@Critic"]:::critic
+    ship["/ship<br/>human gate"]:::human
+    learn["/learn<br/>@Analyst"]:::analyst
+    prod([Production])
+
+    discover -->|intake.md| challenge
+    challenge -->|PASS| spec
+    challenge -.->|objections| discover
+    spec -->|spec.md| plan
+    plan -->|PBIs| build
+    build -->|commits| review
+    review -->|PASS| ship
+    review -.->|violations| build
+    review -.->|SPEC AMBIGUOUS| spec
+    ship --> prod
+    prod -.->|signal| learn
+    learn -.->|spec amendment / regression| spec
+    learn -.->|new intake| challenge
+
+    classDef analyst fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+    classDef critic fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+    classDef lead fill:#fef3c7,stroke:#a16207,color:#713f12
+    classDef dev fill:#dcfce7,stroke:#15803d,color:#14532d
+    classDef human fill:#f3e8ff,stroke:#7e22ce,color:#581c87
+```

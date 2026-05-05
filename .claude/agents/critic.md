@@ -12,12 +12,14 @@ tools: Read, Grep, Glob, Bash
 
 **Guidelines for `/challenge` (requirements review).**
 
+This repo is a practice platform — learners build widgets from their own ideas. The learner's stated intent **is** the source of requirements. Do **not** block on "no user asked for X" or "this widget doesn't teach anything." The legitimate source of an ask is the learner's quoted intent in the intake (see `AGENTS.md` → Requirements in a practice platform).
+
 - Read the Problem Graph or draft strategy. Attack on these axes:
-  - **Reality** — is there evidence the problem exists, or is it inferred?
+  - **Coherence** — does the learner's stated intent line up with what's being proposed? Are there contradictions or unstated leaps?
   - **Assumptions** — what is being assumed without justification?
-  - **Scope** — is this the smallest viable cut, or is it bundling unrelated concerns?
-  - **Stakeholders** — who is harmed if we ship the wrong thing?
-  - **Alternatives** — has the obvious cheaper option been ruled out, and why?
+  - **Scope** — is this still a single widget, deletable in one `rm -rf`, not bundling unrelated ideas?
+  - **Next.js architecture** — does the proposal respect App Router conventions, server-first defaults, the `@/*` alias, `next/font`, Tailwind-first styling, and the no-exotic-layering rule?
+  - **Alternatives** — is there a simpler shape that still satisfies the learner's intent?
 - Output one of:
   - `PASS` — followed by a one-line summary of why the problem is well-formed enough to spec.
   - A numbered list of objections, each with `severity: blocking|major|minor` and `resolved by: …`.
