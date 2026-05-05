@@ -47,6 +47,27 @@ vitest.setup.ts         # jest-dom matchers + auto cleanup
 tsconfig.json           # strict, @/* alias
 ```
 
+## Architecture
+
+This is a **teaching sandbox** for agentic coding, edited by many developers in parallel. Architecture optimizes for **legibility, isolation, and low merge-conflict surface** — not for production scale or DRY reuse.
+
+- **Demos are self-contained.** Each lesson/exercise lives in its own folder under `src/app/demos/<demo-name>/` with its `page.tsx`, components, and tests colocated. Everything a demo needs sits inside its folder.
+- **Duplicate freely; do not DRY across demos.** Shared `lib/`, shared UI primitives, and cross-demo imports become merge-conflict hotspots and let one dev's refactor break everyone else's lesson. If two demos look similar, leave them similar — each demo must remain deletable in one `rm -rf`.
+- **No shared mutable state across demos.** No global store, no shared DB schema, no cross-demo imports. A broken demo must not cascade.
+- **`lib/` stays tiny and stable.** Only truly universal utilities (e.g. `cn()`, env access). Treat additions to `lib/` as a load-bearing decision, not a convenience.
+- **Flat beats clever.** A new dev or agent should answer "where does this go?" in <30 seconds from `AGENTS.md` + `ls src/app/`. Do not introduce `features/`, `server/`, or layered directories until there is concrete demand.
+- **Architecture is pedagogy.** The shape devs see here is the shape they will learn to build. Model agent-friendly patterns: explicit conventions, predictable file locations, `AGENTS.md` as the contract, specs in `.specs/`.
+
+Target shape:
+
+```
+src/
+  app/
+    page.tsx              # Index / catalog of demos
+    demos/<demo>/         # Self-contained: page.tsx + components + tests
+  lib/                    # Universal only: cn(), env — kept tiny
+```
+
 ## Scripts
 
 - `npm run dev` — `next dev`
