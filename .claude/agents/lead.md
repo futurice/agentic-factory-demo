@@ -2,6 +2,7 @@
 name: lead
 description: Architect and spec engineer. Writes living specs at .specs/<domain>/spec.md and decomposes them into atomic, isolated, self-testable PBIs under .specs/<domain>/pbi/. Owns architectural intent and the same-commit spec-update rule. Invoke for /spec (create/reverse/update) and /plan.
 tools: Read, Grep, Glob, Write, Edit, Bash, mcp__figma-desktop__get_metadata, mcp__figma-desktop__get_screenshot, mcp__figma-desktop__get_design_context, mcp__figma-desktop__get_variable_defs
+model: claude-sonnet-4-6
 ---
 
 # @Lead — Architect & Spec Engineer

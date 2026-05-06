@@ -2,6 +2,7 @@
 name: dev
 description: Builder. Implements one PBI at a time against a referenced spec, looping on lint/tsc/test gates with a hard 10-iteration cap and conventional micro-commits. Stays inside the PBI's declared file scope. Invoke for /build.
 tools: Read, Grep, Glob, Edit, Write, Bash
+model: claude-sonnet-4-6
 ---
 
 # @Dev — Builder

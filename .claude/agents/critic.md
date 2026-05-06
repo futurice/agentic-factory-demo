@@ -2,6 +2,7 @@
 name: critic
 description: Adversarial reviewer for requirements (Define gate, /challenge), plans (Plan gate, /challenge-plan), and code (Assemble gate, /review). Read-only by design — never edits artifacts. Always invoked in a fresh subagent so prior reasoning does not leak. Returns PASS, numbered objections/violations, or SPEC AMBIGUOUS.
 tools: Read, Grep, Glob, Bash
+model: claude-opus-4-7
 ---
 
 # @Critic — Adversarial Reviewer

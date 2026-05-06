@@ -114,11 +114,11 @@ Subagents in `.claude/agents/`: `analyst`, `lead`, `dev`, `critic` (referenced a
 ## Slash commands
 
 Factory pipeline (Discover → Define → Spec → Assemble → Run):
-`/discover`, `/challenge`, `/spec`, `/plan`, `/challenge-plan`, `/build`, `/review`, `/ship`, `/learn`. Reference card: `/cheat-sheet`.
+`/discover`, `/challenge`, `/spec`, `/plan`, `/challenge-plan`, `/build`, `/review`, `/ship`, `/triage`. Reference card: `/cheat-sheet`.
 
-The pipeline is the **agentic double diamond**: Diamond 1 (Problem Space) refines `/discover` → `/challenge` → `/spec`; Diamond 2 (Solution Space) refines `/plan` → `/challenge-plan` → `/build` → `/review`; `/learn` closes the Run-phase loopback.
+The pipeline is the **agentic double diamond**: Diamond 1 (Problem Space) refines `/discover` → `/challenge` → `/spec`; Diamond 2 (Solution Space) refines `/plan` → `/challenge-plan` → `/build` → `/review`; `/triage` closes the Run-phase loopback.
 
-`/discover <signal>` and `/learn <signal>` are also the **orchestrators**: from the main thread they auto-chain through every phase, halting only on gate objections, the `/build` 10-iteration cap, or the pre-`/ship` boundary. The intermediate phase commands stay runnable à la carte for manual control. `/ship` is always human-gated and never auto-invoked. See `/cheat-sheet` for the flow.
+`/discover <signal>` and `/triage <signal>` are also the **orchestrators**: from the main thread they auto-chain through every phase, halting only on gate objections, the `/build` 10-iteration cap, or the pre-`/ship` boundary. The intermediate phase commands stay runnable à la carte for manual control. `/ship` is always human-gated and never auto-invoked. See `/cheat-sheet` for the flow.
 
 Definitions: `.claude/commands/`. Specs and PBIs live under `.specs/`.
 
@@ -137,7 +137,7 @@ flowchart TD
     build["/build<br/>@Dev — Ralph Loop ≤10"]:::dev
     review["/review<br/>@Critic"]:::critic
     ship["/ship<br/>human gate"]:::human
-    learn["/learn<br/>@Analyst"]:::analyst
+    triage["/triage<br/>@Analyst"]:::analyst
     prod([Production])
 
     discover -->|intake.md| challenge
@@ -150,9 +150,9 @@ flowchart TD
     review -.->|violations| build
     review -.->|SPEC AMBIGUOUS| spec
     ship --> prod
-    prod -.->|signal| learn
-    learn -.->|spec amendment / regression| spec
-    learn -.->|new intake| challenge
+    prod -.->|signal| triage
+    triage -.->|spec amendment / regression| spec
+    triage -.->|new intake| challenge
 
     classDef analyst fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
     classDef critic fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d

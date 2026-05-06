@@ -20,12 +20,12 @@ Pipeline: **Discover → Define → Spec → Assemble → Run**, with adversaria
 | `/build <pbi-id>`                        | Assemble                        | `@Dev`                      | Implement one PBI                              | In-session Ralph Loop: edits + `lint` + `tsc` + `test:run`, max 10 iterations, micro-commits.                                                                                                                      |
 | `/review <pbi-id>`                       | Assemble gate                   | `@Critic`                   | Adversarial code review                        | Fresh `critic` subagent reads only spec + diff. Returns `PASS`, violations, or `SPEC AMBIGUOUS`.                                                                                                                   |
 | `/ship <pbi-id>`                         | Acceptance                      | human (main thread)         | Open the PR                                    | Strategic-fit checklist, awaits explicit human approval, then pushes + opens PR. Stays in main thread (no subagent) for the approval gate. Only command touching remote.                                           |
-| `/learn <signal>`                        | Run → Discover (+ orchestrator) | `@Analyst` then main thread | Production bug, metric, incident               | Routes signal to spec amendment, regression guardrail, or new intake. On "new intake" auto-chains through the rest of the pipeline like `/discover`.                                                               |
+| `/triage <signal>`                       | Run → Discover (+ orchestrator) | `@Analyst` then main thread | Production bug, metric, incident               | Routes signal to spec amendment, regression guardrail, or new intake. On "new intake" auto-chains through the rest of the pipeline like `/discover`.                                                               |
 | `/cheat-sheet`                           | —                               | —                           | This card                                      | Prints this reference.                                                                                                                                                                                             |
 
 ## Typical end-to-end flow
 
-`/discover <signal>` (and `/learn` when it routes to "new intake") is the entry point and the orchestrator. It auto-chains every phase below; you only get prompted on objections or before `/ship`.
+`/discover <signal>` (and `/triage` when it routes to "new intake") is the entry point and the orchestrator. It auto-chains every phase below; you only get prompted on objections or before `/ship`.
 
 ```
 /discover <signal>            # entry point + orchestrator (main thread)
@@ -41,17 +41,17 @@ Pipeline: **Discover → Define → Spec → Assemble → Run**, with adversaria
                           → (if objections) HALT
         → (if objections) HALT
    /ship <pbi-id>              # always human-gated; orchestrator never auto-invokes
-   (later, in production) /learn <signal>   # routes; on "new intake" re-enters the chain above
+   (later, in production) /triage <signal>  # routes; on "new intake" re-enters the chain above
 ```
 
-Individual phase commands (`/challenge`, `/spec`, `/plan`, `/challenge-plan`, `/build`, `/review`) remain runnable à la carte for manual control — only `/discover` and `/learn` self-orchestrate.
+Individual phase commands (`/challenge`, `/spec`, `/plan`, `/challenge-plan`, `/build`, `/review`) remain runnable à la carte for manual control — only `/discover` and `/triage` self-orchestrate.
 
 ## Gate semantics
 
 - **Quality gates** (deterministic): auto-enforced **inside** `/build`. Loop on failure, hard cap 10 iterations.
 - **Review gates** (probabilistic): `/challenge`, `/challenge-plan`, and `/review`. Always fresh session. User decides whether to loop back on FAIL.
 - **Acceptance gate** (human): `/ship`. No auto-anything. Explicit approval required.
-- **Orchestration**: `/discover <signal>` (or `/learn` when routing to "new intake") drives the whole pipeline end-to-end from the main thread. It only halts on gate objections, the `/build` 10-iteration cap, or the pre-`/ship` boundary.
+- **Orchestration**: `/discover <signal>` (or `/triage` when routing to "new intake") drives the whole pipeline end-to-end from the main thread. It only halts on gate objections, the `/build` 10-iteration cap, or the pre-`/ship` boundary.
 
 ## Rules baked into the personas
 
