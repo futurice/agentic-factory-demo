@@ -8,19 +8,19 @@ Display the following cheat sheet **verbatim** to the user, then stop. Do not ad
 
 # Agentic Software Factory — Cheat Sheet
 
-Pipeline: **Discover → Define → Spec → Assemble → Run**, with adversarial gates between phases. Personas live in `.claude/skills/`; specs live in `.specs/`.
+Pipeline: **Discover → Define → Spec → Assemble → Run**, with adversarial gates between phases. Personas are subagents in `.claude/agents/` (dispatched via the Agent tool); specs live in `.specs/`.
 
-| Command | Phase | Persona | Use case | One-liner |
-|---|---|---|---|---|
-| `/discover <signal>` | Discover | `@Analyst` | New idea, raw feedback, bug report, transcript | Cluster the signal into `.specs/_intake/<slug>.md` (Problem Graph). No solutions yet. |
-| `/challenge <intake>` | Define gate | `@Critic` | Before writing any spec | Adversarially attack the problem statement. Returns `PASS` or numbered objections. |
-| `/spec create\|reverse\|update <domain>` | Spec | `@Lead` | Write/refresh a living spec | Produces `.specs/<domain>/spec.md` with Blueprint + Contract + Gherkin. |
-| `/plan <domain>` | Spec → Assemble | `@Lead` | Break the spec into work units | Writes atomic, isolated, self-testable PBIs to `.specs/<domain>/pbi/`. |
-| `/build <pbi-id>` | Assemble | `@Dev` | Implement one PBI | In-session Ralph Loop: edits + `lint` + `tsc` + `test:run`, max 10 iterations, micro-commits. |
-| `/review <pbi-id>` | Assemble gate | `@Critic` | Adversarial code review | Fresh subagent reads only spec + diff. Returns `PASS`, violations, or `SPEC AMBIGUOUS`. |
-| `/ship <pbi-id>` | Acceptance | human + `@Lead` | Open the PR | Strategic-fit checklist, awaits explicit human approval, then pushes + opens PR. Only command touching remote. |
-| `/learn <signal>` | Run → Discover | `@Analyst` | Production bug, metric, incident | Routes signal back into spec amendment, new intake, or regression guardrail. |
-| `/cheat-sheet` | — | — | This card | Prints this reference. |
+| Command                                  | Phase           | Persona             | Use case                                       | One-liner                                                                                                                                                                |
+| ---------------------------------------- | --------------- | ------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/discover <signal>`                     | Discover        | `@Analyst`          | New idea, raw feedback, bug report, transcript | Cluster the signal into `.specs/_intake/<slug>.md` (Problem Graph). No solutions yet.                                                                                    |
+| `/challenge <intake>`                    | Define gate     | `@Critic`           | Before writing any spec                        | Adversarially attack the problem statement. Returns `PASS` or numbered objections.                                                                                       |
+| `/spec create\|reverse\|update <domain>` | Spec            | `@Lead`             | Write/refresh a living spec                    | Produces `.specs/<domain>/spec.md` with Blueprint + Contract + Gherkin.                                                                                                  |
+| `/plan <domain>`                         | Spec → Assemble | `@Lead`             | Break the spec into work units                 | Writes atomic, isolated, self-testable PBIs to `.specs/<domain>/pbi/`.                                                                                                   |
+| `/build <pbi-id>`                        | Assemble        | `@Dev`              | Implement one PBI                              | In-session Ralph Loop: edits + `lint` + `tsc` + `test:run`, max 10 iterations, micro-commits.                                                                            |
+| `/review <pbi-id>`                       | Assemble gate   | `@Critic`           | Adversarial code review                        | Fresh `critic` subagent reads only spec + diff. Returns `PASS`, violations, or `SPEC AMBIGUOUS`.                                                                         |
+| `/ship <pbi-id>`                         | Acceptance      | human (main thread) | Open the PR                                    | Strategic-fit checklist, awaits explicit human approval, then pushes + opens PR. Stays in main thread (no subagent) for the approval gate. Only command touching remote. |
+| `/learn <signal>`                        | Run → Discover  | `@Analyst`          | Production bug, metric, incident               | Routes signal back into spec amendment, new intake, or regression guardrail.                                                                                             |
+| `/cheat-sheet`                           | —               | —                   | This card                                      | Prints this reference.                                                                                                                                                   |
 
 ## Typical end-to-end flow
 

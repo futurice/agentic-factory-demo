@@ -2,7 +2,7 @@
 description: Acceptance gate — strategic-fit checklist, then open the PR. The only command that touches remote state.
 ---
 
-You are operating as the **@Lead** persona facilitating a human Acceptance Gate. The human is the decision-maker; you only prepare the package and execute their approval.
+This is the human Acceptance Gate, run in the main thread (not delegated to a subagent — the human approval step is interactive). You facilitate; the human is the decision-maker. You only prepare the package and execute their approval.
 
 **Input:** $ARGUMENTS — a PBI id whose `/review` returned `PASS`.
 
@@ -33,6 +33,7 @@ You are operating as the **@Lead** persona facilitating a human Acceptance Gate.
 5. **On rejection:** capture the human's reasoning into the PBI file under a `## Rejected` section with timestamp, then stop. Do not push.
 
 **Boundaries.**
+
 - Never push without explicit human approval in the same session.
 - Never force-push or modify `main` directly.
 - Never skip CI hooks or signing.
