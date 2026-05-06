@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { formatMmSs } from "./format-time";
 
 const INITIAL_SECONDS = 1500;
-const RING_RADIUS = 110;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 type TimerState = "idle" | "running" | "paused" | "completed";
 
@@ -32,9 +30,6 @@ export function PomodoroCard() {
 
   const isRunning = state === "running";
   const playLabel = isRunning ? "Pause" : "Start";
-  const elapsed = INITIAL_SECONDS - secondsRemaining;
-  const progress = Math.min(1, Math.max(0, elapsed / INITIAL_SECONDS));
-  const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
 
   function handlePlayPause() {
     if (state === "running") {
@@ -86,29 +81,27 @@ export function PomodoroCard() {
         aria-hidden="true"
       >
         <svg
-          width="256"
-          height="256"
-          viewBox="0 0 256 256"
-          className="absolute inset-0 m-auto -rotate-90"
+          viewBox="0 0 344.664 256"
+          className="absolute inset-0 h-full w-full"
         >
           <circle
-            cx="128"
+            cx="172.332"
             cy="128"
-            r={RING_RADIUS}
-            stroke="#1E2939"
-            strokeWidth="12"
+            r="115.2"
+            stroke="#1F2937"
+            strokeWidth="10.24"
             fill="none"
           />
           <circle
-            cx="128"
+            cx="172.332"
             cy="128"
-            r={RING_RADIUS}
-            stroke="#155DFC"
-            strokeWidth="12"
+            r="115.2"
+            stroke="#3B82F6"
+            strokeWidth="10.24"
             fill="none"
             strokeLinecap="round"
-            strokeDasharray={RING_CIRCUMFERENCE}
-            strokeDashoffset={dashOffset}
+            strokeDasharray="120.637 60.319"
+            transform="rotate(-90 172.332 128)"
           />
         </svg>
         <span className="text-[60px] leading-[60px] font-[var(--font-space-grotesk)] font-bold text-white">
