@@ -59,4 +59,4 @@ Dispatch this task to the `lead` subagent via the Agent tool (`subagent_type: le
 >
 > Do not write code. Do not edit the spec itself — if the decomposition reveals gaps, report them so the user can run `/spec update $ARGUMENTS`.
 
-After relaying, suggest `/build <pbi-id>` for the first independent PBI.
+After relaying, suggest `/challenge-plan $ARGUMENTS` to vet the decomposition before any code is written.
