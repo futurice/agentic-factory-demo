@@ -22,6 +22,7 @@ Dispatch this task to the `lead` subagent via the Agent tool (`subagent_type: le
 >    - For `reverse`: systematically read source files in the feature area; trace data flow, schemas, error handling, edge cases. Reconstruct intent from patterns.
 >    - For `update`: read the existing `.specs/<domain>/spec.md` and `git diff` recent changes; identify stale sections.
 >    - If the ASDLC MCP is available and you need methodology refresh, call `mcp__asdlc__get_article` for `the-spec`, `living-specs`, or `spec-driven-development`.
+>    - If the intake or signal references a **Figma URL** and the visual contract needs grounding, try the figma desktop MCP first (`mcp__figma-desktop__get_metadata`, `mcp__figma-desktop__get_screenshot`, `mcp__figma-desktop__get_design_context`, `mcp__figma-desktop__get_variable_defs`). Extract the `nodeId` from the URL (e.g. `?node-id=1-3` → `1:3`). If the MCP is not connected (the call returns a "no such tool" / "MCP not available" error), do **not** invent visual tokens — pin the spec's visual contract to whatever evidence the intake records and flag the gap explicitly in the Blueprint.
 > 2. **Authoring principles.**
 >    - State constraints **positively**. No "Anti-Patterns" sections.
 >    - Use Gherkin scenarios to absorb failure modes (`Given / When / Then`).

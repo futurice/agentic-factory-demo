@@ -19,6 +19,8 @@ Dispatch the Analyst subagent (`subagent_type: analyst`) with this prompt:
 > Signal: $ARGUMENTS
 > Read or accept the signal. Cite its source (URL, file:line, ticket id).
 >
+> **Figma URLs:** if the signal contains a `figma.com/design/...` URL, extract the `nodeId` (e.g. `?node-id=1-3` → `1:3`) and try the figma desktop MCP first (`mcp__figma-desktop__get_metadata`, `mcp__figma-desktop__get_screenshot`, `mcp__figma-desktop__get_design_context`, `mcp__figma-desktop__get_variable_defs`) — `WebFetch` will hit Figma's login wall. If the MCP is not connected, cite the URL and note "Figma MCP not connected — design content unavailable" rather than inventing visual claims.
+>
 > Decide the routing:
 >
 > - **Spec amendment** — if the signal contradicts or extends an existing `.specs/<domain>/spec.md`'s Contract, recommend `/spec update <domain>` and draft the diff. Do **not** apply it yourself — `@Lead` owns spec writes.

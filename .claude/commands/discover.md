@@ -31,6 +31,8 @@ If `$ARGUMENTS` is empty, ask the user for a signal rather than guessing.
    > Signal: $ARGUMENTS
    > If the signal references a file, URL, issue, or transcript, read it. Otherwise treat the argument string as the raw signal itself.
    >
+   > **Figma URLs:** the public Figma URL gates behind login, so `WebFetch` will fail silently. If the signal contains a `figma.com/design/...` URL, extract the `nodeId` from the URL (e.g. `?node-id=1-3` → `1:3`) and try the figma desktop MCP: `mcp__figma-desktop__get_metadata`, `mcp__figma-desktop__get_screenshot`, `mcp__figma-desktop__get_design_context`, `mcp__figma-desktop__get_variable_defs`. If the MCP is not connected (the call returns a "no such tool" / "MCP not available" error), record the URL in Sources, note "Figma MCP not connected — design content unavailable" as an Open Question, and proceed without inventing visual claims.
+   >
    > Steps:
    >
    > 1. Cluster the input into named patterns. For each pattern, cite the source (file:line, URL, or quoted excerpt).
