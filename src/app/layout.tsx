@@ -39,7 +39,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${inter.variable}`}
     >
-      <body>{children}</body>
+      <body className="flex min-h-screen flex-col bg-[#030712]">
+        <main className="mx-auto w-full max-w-[1280px] px-[58.5px] pt-[32px]">
+          {children}
+        </main>
+      </body>
     </html>
   );
 }

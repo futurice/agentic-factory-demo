@@ -54,7 +54,7 @@ export function PomodoroCard() {
 
   return (
     <article
-      className="flex w-[410.66px] flex-col rounded-[10px] border border-[#1E2939] bg-[#101828] p-[33px] pb-[32px] font-[var(--font-inter)]"
+      className="flex w-[410.66px] flex-col gap-[32px] rounded-[10px] border border-[#1E2939] bg-[#101828] p-[33px] pb-[32px] font-[var(--font-inter)]"
       aria-label="Pomodoro timer"
     >
       <header className="flex items-start justify-between">
@@ -82,7 +82,7 @@ export function PomodoroCard() {
       </header>
 
       <div
-        className="relative mx-auto mt-[24px] flex h-[256px] w-[344.66px] items-center justify-center"
+        className="relative mx-auto flex h-[256px] w-[344.66px] items-center justify-center"
         aria-hidden="true"
       >
         <svg
@@ -116,7 +116,7 @@ export function PomodoroCard() {
         </span>
       </div>
 
-      <div className="mt-[24px] flex items-center justify-center gap-[16px]">
+      <div className="flex items-center justify-center gap-[16px]">
         <button
           type="button"
           onClick={handlePlayPause}
