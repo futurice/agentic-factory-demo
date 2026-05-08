@@ -136,7 +136,7 @@ export function PomodoroCard() {
             cx="172.332"
             cy="128"
             r="115.2"
-            stroke="#1F2937"
+            stroke="#111827"
             strokeWidth="10.24"
             fill="none"
           />

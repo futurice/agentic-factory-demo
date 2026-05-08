@@ -356,7 +356,7 @@ describe("PomodoroCard", () => {
     expect(track.getAttribute("cx")).toBe("172.332");
     expect(track.getAttribute("cy")).toBe("128");
     expect(track.getAttribute("r")).toBe("115.2");
-    expect(track.getAttribute("stroke")).toBe("#1F2937");
+    expect(track.getAttribute("stroke")).toBe("#111827");
     expect(track.getAttribute("stroke-width")).toBe("10.24");
     expect(track.getAttribute("fill")).toBe("none");
     expect(track.getAttribute("stroke-dasharray")).toBeNull();
@@ -496,6 +496,25 @@ describe("PomodoroCard", () => {
     const panel = screen.getByRole("region", { name: /timer settings/i });
     expect(panel.className).toMatch(/bg-\[#(101828|0B1220)\]/);
     expect(panel.className).toMatch(/border-\[#1E2939\]/);
+  });
+
+  it("ring track is significantly dimmer than the remaining-time arc (Decision 8)", () => {
+    const { container } = render(<PomodoroCard />);
+    const svg = getRingSvg(container);
+    const circles = svg.querySelectorAll("circle");
+    expect(circles.length).toBe(2);
+
+    const [track, foreground] = Array.from(circles);
+    // Track is the dimmer #111827 backdrop (Decision 8).
+    expect(track.getAttribute("stroke")).toBe("#111827");
+    // Foreground remaining-time arc keeps #3B82F6 (regression guardrail).
+    expect(foreground.getAttribute("stroke")).toBe("#3B82F6");
+
+    // No <circle> inside the ring SVG carries stroke="#1F2937".
+    for (const circle of Array.from(circles)) {
+      expect(circle.getAttribute("stroke")).not.toBe("#1F2937");
+    }
+    expect(svg.querySelectorAll('circle[stroke="#1F2937"]').length).toBe(0);
   });
 
   it("ring returns to four-segment idle pattern on reset", () => {
