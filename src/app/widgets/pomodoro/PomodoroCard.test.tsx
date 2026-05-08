@@ -74,6 +74,8 @@ describe("PomodoroCard", () => {
     ).toBeInTheDocument();
   });
 
+  it.todo("pause freezes the ring offset");
+
   it("reset returns running timer to 25:00 with start label", () => {
     render(<PomodoroCard />);
     act(() => {
@@ -107,16 +109,33 @@ describe("PomodoroCard", () => {
     expect(getTimeDisplay()).toHaveTextContent("25:00");
   });
 
-  it("timer reaches zero, stops, and start button is no longer pause", () => {
+  it("work interval reaching zero advances to resting (strict alternation)", () => {
     render(<PomodoroCard />);
     act(() => {
       screen.getByRole("button", { name: /start|play/i }).click();
     });
     advanceSeconds(1500);
-    expect(getTimeDisplay()).toHaveTextContent("00:00");
-    advanceSeconds(5);
-    expect(getTimeDisplay()).toHaveTextContent("00:00");
-    expect(screen.queryByRole("button", { name: /pause/i })).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: /rest time/i }),
+    ).toBeInTheDocument();
+    expect(getTimeDisplay()).toHaveTextContent("05:00");
+    expect(screen.getByRole("button", { name: /pause/i })).toBeInTheDocument();
+  });
+
+  it("rest interval reaching zero advances to a fresh work interval", () => {
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    // Work (1500s) -> resting; then rest (300s) -> running (work)
+    advanceSeconds(1500);
+    expect(getTimeDisplay()).toHaveTextContent("05:00");
+    advanceSeconds(300);
+    expect(
+      screen.getByRole("heading", { name: /work time/i }),
+    ).toBeInTheDocument();
+    expect(getTimeDisplay()).toHaveTextContent("25:00");
+    expect(screen.getByRole("button", { name: /pause/i })).toBeInTheDocument();
   });
 
   it("renders the four-segment dashed ring matching Figma node 1:11", () => {

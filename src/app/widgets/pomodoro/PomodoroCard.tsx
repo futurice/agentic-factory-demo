@@ -3,36 +3,42 @@
 import { useEffect, useState } from "react";
 import { formatMmSs } from "./format-time";
 
-const INITIAL_SECONDS = 1500;
-
-type TimerState = "idle" | "running" | "paused" | "completed";
+type TimerState = "idle" | "running" | "paused" | "resting" | "completed";
 
 export function PomodoroCard() {
   const [state, setState] = useState<TimerState>("idle");
-  const [secondsRemaining, setSecondsRemaining] =
-    useState<number>(INITIAL_SECONDS);
+  const [workMinutes, setWorkMinutes] = useState<number>(25);
+  const [restMinutes, setRestMinutes] = useState<number>(5);
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(25 * 60);
 
   useEffect(() => {
-    if (state !== "running") {
+    if (state !== "running" && state !== "resting") {
       return;
     }
     const id = setInterval(() => {
       setSecondsRemaining((prev) => {
-        if (prev <= 1) {
-          setState("completed");
-          return 0;
+        if (prev > 1) {
+          return prev - 1;
         }
-        return prev - 1;
+        // Phase advance: running (work) -> resting; resting -> running (work)
+        if (state === "running") {
+          setState("resting");
+          return restMinutes * 60;
+        }
+        // state === "resting"
+        setState("running");
+        return workMinutes * 60;
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [state]);
+  }, [state, workMinutes, restMinutes]);
 
-  const isRunning = state === "running";
-  const playLabel = isRunning ? "Pause" : "Start";
+  const isActive = state === "running" || state === "resting";
+  const playLabel = isActive ? "Pause" : "Start";
+  const titleText = state === "resting" ? "Rest Time" : "Work Time";
 
   function handlePlayPause() {
-    if (state === "running") {
+    if (isActive) {
       setState("paused");
       return;
     }
@@ -44,7 +50,11 @@ export function PomodoroCard() {
 
   function handleReset() {
     setState("idle");
-    setSecondsRemaining(INITIAL_SECONDS);
+    // Re-apply current minute settings via their setters so both stay wired
+    // to a real consumer (PBI 06 will wire them to slider UI).
+    setWorkMinutes(workMinutes);
+    setRestMinutes(restMinutes);
+    setSecondsRemaining(workMinutes * 60);
   }
 
   return (
@@ -54,7 +64,7 @@ export function PomodoroCard() {
     >
       <header className="flex items-start justify-between">
         <h2 className="text-[24px] leading-[32px] font-[var(--font-space-grotesk)] font-bold text-white">
-          Work Time
+          {titleText}
         </h2>
         <span
           aria-hidden="true"
@@ -117,7 +127,7 @@ export function PomodoroCard() {
           aria-label={playLabel}
           className="flex h-[56px] w-[56px] items-center justify-center rounded-[10px] bg-[#155DFC] text-white disabled:opacity-50"
         >
-          {isRunning ? (
+          {isActive ? (
             <svg
               width="20"
               height="20"
