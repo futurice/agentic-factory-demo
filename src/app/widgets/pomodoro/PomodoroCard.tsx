@@ -40,7 +40,14 @@ export function PomodoroCard() {
 
   const isActive = state === "running" || state === "resting";
   const playLabel = isActive ? "Pause" : "Start";
-  const titleText = state === "resting" ? "Rest Time" : "Work Time";
+  // Decision 11: the phase label inside the ring container reads "work" in
+  // idle | paused-from-work | running (work) | completed, and "rest" in
+  // resting | paused-from-rest. `paused` here is paused-from-work iff `phase`
+  // is "work", paused-from-rest iff `phase` is "rest".
+  const phaseLabel =
+    state === "resting" || (state === "paused" && phase === "rest")
+      ? "rest"
+      : "work";
 
   function handlePlayPause() {
     if (isActive) {
@@ -116,10 +123,7 @@ export function PomodoroCard() {
       className="flex w-[410.66px] flex-col gap-[32px] rounded-[10px] border border-[#1E2939] bg-[#101828] p-[33px] pb-[32px] font-[var(--font-inter)]"
       aria-label="Pomodoro timer"
     >
-      <header className="flex items-start justify-between">
-        <h2 className="text-[24px] leading-[32px] font-[var(--font-space-grotesk)] font-bold text-white">
-          {titleText}
-        </h2>
+      <header className="flex items-start justify-end">
         <button
           type="button"
           aria-label="Settings"
@@ -143,12 +147,10 @@ export function PomodoroCard() {
         </button>
       </header>
 
-      <div
-        className="relative mx-auto flex h-[256px] w-[344.66px] items-center justify-center"
-        aria-hidden="true"
-      >
+      <div className="relative mx-auto flex h-[256px] w-[344.66px] flex-col items-center justify-center">
         <div
           data-testid="ring"
+          aria-hidden="true"
           className="absolute top-1/2 left-1/2 h-[256px] w-[256px] -translate-x-1/2 -translate-y-1/2"
           style={
             {
@@ -160,6 +162,9 @@ export function PomodoroCard() {
             } as React.CSSProperties
           }
         />
+        <h2 className="relative text-center text-[12px] leading-[16px] font-[var(--font-inter)] text-[#99A1AF]">
+          {phaseLabel}
+        </h2>
         <span className="relative text-[60px] leading-[60px] font-[var(--font-space-grotesk)] font-bold text-white">
           {formatMmSs(secondsRemaining)}
         </span>

@@ -39,10 +39,10 @@ describe("PomodoroCard", () => {
     vi.useRealTimers();
   });
 
-  it("renders idle card with Work Time heading and 25:00 display", () => {
+  it("renders idle card with work phase label and 25:00 display", () => {
     render(<PomodoroCard />);
     expect(
-      screen.getByRole("heading", { name: /work time/i }),
+      screen.getByRole("heading", { name: /^work$/i }),
     ).toBeInTheDocument();
     expect(getTimeDisplay()).toHaveTextContent("25:00");
     expect(screen.getByRole("button", { name: /start|play/i })).toBeEnabled();
@@ -114,7 +114,7 @@ describe("PomodoroCard", () => {
     });
     expect(getTimeDisplay()).toHaveTextContent("30:00");
     expect(
-      screen.getByRole("heading", { name: /work time/i }),
+      screen.getByRole("heading", { name: /^work$/i }),
     ).toBeInTheDocument();
   });
 
@@ -129,7 +129,7 @@ describe("PomodoroCard", () => {
     });
     expect(getTimeDisplay()).toHaveTextContent("25:00");
     expect(
-      screen.getByRole("heading", { name: /work time/i }),
+      screen.getByRole("heading", { name: /^work$/i }),
     ).toBeInTheDocument();
   });
 
@@ -193,7 +193,7 @@ describe("PomodoroCard", () => {
     });
     advanceSeconds(1500);
     expect(
-      screen.getByRole("heading", { name: /rest time/i }),
+      screen.getByRole("heading", { name: /^rest$/i }),
     ).toBeInTheDocument();
     expect(getTimeDisplay()).toHaveTextContent("10:00");
   });
@@ -207,7 +207,7 @@ describe("PomodoroCard", () => {
     advanceSeconds(30); // resting -> 4:30
     expect(getTimeDisplay()).toHaveTextContent("04:30");
     expect(
-      screen.getByRole("heading", { name: /rest time/i }),
+      screen.getByRole("heading", { name: /^rest$/i }),
     ).toBeInTheDocument();
 
     act(() => {
@@ -216,9 +216,9 @@ describe("PomodoroCard", () => {
     expect(
       screen.getByRole("region", { name: /timer settings/i }),
     ).toBeInTheDocument();
-    // Title still Rest Time and timer still ticks.
+    // Phase label still "rest" and timer still ticks.
     expect(
-      screen.getByRole("heading", { name: /rest time/i }),
+      screen.getByRole("heading", { name: /^rest$/i }),
     ).toBeInTheDocument();
     advanceSeconds(1);
     expect(getTimeDisplay()).toHaveTextContent("04:29");
@@ -323,7 +323,7 @@ describe("PomodoroCard", () => {
     });
     advanceSeconds(1500);
     expect(
-      screen.getByRole("heading", { name: /rest time/i }),
+      screen.getByRole("heading", { name: /^rest$/i }),
     ).toBeInTheDocument();
     expect(getTimeDisplay()).toHaveTextContent("05:00");
     expect(screen.getByRole("button", { name: /pause/i })).toBeInTheDocument();
@@ -339,7 +339,7 @@ describe("PomodoroCard", () => {
     expect(getTimeDisplay()).toHaveTextContent("05:00");
     advanceSeconds(300);
     expect(
-      screen.getByRole("heading", { name: /work time/i }),
+      screen.getByRole("heading", { name: /^work$/i }),
     ).toBeInTheDocument();
     expect(getTimeDisplay()).toHaveTextContent("25:00");
     expect(screen.getByRole("button", { name: /pause/i })).toBeInTheDocument();
@@ -568,5 +568,98 @@ describe("PomodoroCard", () => {
     expect(
       getRingContainer(container).querySelectorAll("svg, circle").length,
     ).toBe(0);
+  });
+
+  // Decision 11 (Amendment 2026-05-08 #3) — phase label inside the ring
+  // container above the MM:SS time display.
+
+  it("phase label heading reads 'work' in idle and uses Decision 11 typography", () => {
+    const { container } = render(<PomodoroCard />);
+    const heading = screen.getByRole("heading", { name: /^work$/i });
+    expect(heading.tagName).toBe("H2");
+    expect(heading.className).toMatch(/text-\[12px\]/);
+    expect(heading.className).toMatch(/text-\[#99A1AF\]/);
+    expect(heading.className).toMatch(/font-\[var\(--font-inter\)\]/);
+    // Negative DoD bullet: no top-of-card "Work Time"/"Rest Time" heading
+    // anywhere in the card in any state.
+    expect(
+      screen.queryByRole("heading", { name: /^(work|rest) time$/i }),
+    ).toBeNull();
+    // Exactly one <h2> rendered in the card.
+    const card = container.querySelector('[aria-label="Pomodoro timer"]');
+    expect(card).not.toBeNull();
+    expect(card!.querySelectorAll("h2").length).toBe(1);
+  });
+
+  it("phase label heading flips to 'rest' on phase advance and back to 'work' on the next advance", () => {
+    render(<PomodoroCard />);
+    // idle -> "work"
+    expect(
+      screen.getByRole("heading", { name: /^work$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /^(work|rest) time$/i }),
+    ).toBeNull();
+
+    // running (work) -> "work"
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    expect(
+      screen.getByRole("heading", { name: /^work$/i }),
+    ).toBeInTheDocument();
+
+    // pause (paused-from-work) -> "work"
+    advanceSeconds(5);
+    act(() => {
+      screen.getByRole("button", { name: /pause/i }).click();
+    });
+    expect(
+      screen.getByRole("heading", { name: /^work$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /^(work|rest) time$/i }),
+    ).toBeNull();
+
+    // resume + run to phase advance -> resting -> "rest"
+    act(() => {
+      screen.getByRole("button", { name: /start|play|resume/i }).click();
+    });
+    advanceSeconds(1495);
+    expect(
+      screen.getByRole("heading", { name: /^rest$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /^(work|rest) time$/i }),
+    ).toBeNull();
+
+    // pause during rest (paused-from-rest) -> "rest"
+    act(() => {
+      screen.getByRole("button", { name: /pause/i }).click();
+    });
+    expect(
+      screen.getByRole("heading", { name: /^rest$/i }),
+    ).toBeInTheDocument();
+
+    // reset -> idle -> "work"
+    act(() => {
+      screen.getByRole("button", { name: /reset/i }).click();
+    });
+    expect(
+      screen.getByRole("heading", { name: /^work$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /^(work|rest) time$/i }),
+    ).toBeNull();
+  });
+
+  it("phase label heading precedes the MM:SS time display in DOM order (above the time)", () => {
+    render(<PomodoroCard />);
+    const heading = screen.getByRole("heading", { name: /^work$/i });
+    const timeDisplay = getTimeDisplay();
+    // Heading and time display share the ring container; heading appears
+    // first in DOM order (visually centered above the MM:SS span).
+    const position = heading.compareDocumentPosition(timeDisplay);
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
