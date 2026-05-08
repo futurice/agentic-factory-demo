@@ -1,0 +1,63 @@
+flowchart TD
+    signal([Raw signal])
+
+    subgraph D1[" Diamond 1 — Problem Space "]
+        direction TB
+        discover["/discover<br/>@Analyst"]:::analyst
+        challenge["/challenge<br/>@Critic"]:::critic
+        spec["/spec<br/>@Lead"]:::lead
+    end
+
+    subgraph D2[" Diamond 2 — Solution Space "]
+        direction TB
+        plan["/plan<br/>@Lead"]:::lead
+        cplan["/challenge-plan<br/>@Critic"]:::critic
+        build["/build<br/>@Dev — Ralph Loop ≤10"]:::dev
+        review["/review<br/>@Critic"]:::critic
+    end
+
+    ship["/ship<br/>preflight + human gate"]:::human
+    prod([Production])
+    triage["/triage<br/>@Analyst"]:::analyst
+    retro["/retro<br/>@Analyst"]:::analyst
+
+    designTemplate[(Design Contract<br/>template)]:::artifact
+    constitution[(Constitution)]:::artifact
+    context([Constitution / AGENTS.md /<br/>personas / templates]):::artifact
+
+    statusNote["/status &lt;domain&gt;<br/>read-only diagnostic,<br/>invokable any time"]:::diagnostic
+
+    signal --> discover
+    discover -->|intake.md| challenge
+    challenge -->|PASS| spec
+    spec -->|spec.md| plan
+    plan -->|PBIs| cplan
+    cplan -->|PASS| build
+    build -->|commits| review
+    review -->|PASS| ship
+    ship --> prod
+
+    challenge -.->|objections| discover
+    cplan -.->|objections| plan
+    review -.->|violations| build
+    review -.->|SPEC AMBIGUOUS| spec
+
+    designTemplate -.->|consulted when no Figma| spec
+    constitution -.->|second contract| review
+    constitution -.->|preflight rules| ship
+
+    prod -.->|signal| triage
+    triage -.->|spec amendment / regression| spec
+    triage -.->|new intake| challenge
+
+    ship -.->|nudge| retro
+    retro -.->|proposed amendments| context
+    context -.->|shapes future runs| discover
+
+    classDef analyst fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+    classDef critic fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+    classDef lead fill:#fef3c7,stroke:#a16207,color:#713f12
+    classDef dev fill:#dcfce7,stroke:#15803d,color:#14532d
+    classDef human fill:#f3e8ff,stroke:#7e22ce,color:#581c87
+    classDef diagnostic fill:#f3f4f6,stroke:#374151,color:#1f2937
+    classDef artifact fill:#fffbeb,stroke:#92400e,color:#451a03

@@ -42,13 +42,21 @@ The PBI set is the contract between spec and build. A vague or overlapping decom
 
 **Guidelines for `/review` (code review).**
 
-- Read **only** the relevant spec sections and the code diff. Do not read the Builder's reasoning or commit-message narrative.
-- Validate against the spec's Blueprint (constraints) and Contract (Definition of Done, Regression Guardrails, Scenarios).
-- For each violation report: (1) what contract was broken, (2) impact, (3) remediation path, (4) test that would prevent regression.
+`/review` validates against **two contracts**:
+
+1. **The Spec** — does the diff implement what was asked? (functional correctness)
+2. **The Constitution** — does it do so the platform's way? (architectural correctness)
+
+Both contracts must be satisfied. Code can pass tests and fulfill the spec while still violating platform invariants — that is exactly the kind of failure this gate exists to catch.
+
+- Read **only** the relevant spec sections, `.specs/CONSTITUTION.md`, and the code diff. Do not read the Builder's reasoning or commit-message narrative.
+- **Spec pass.** Validate against the spec's Blueprint (constraints) and Contract (Definition of Done, Regression Guardrails, Scenarios).
+- **Constitutional pass.** For each `NEVER`/`ALWAYS` rule in the Constitution, check whether the diff violates or omits it. Pay special attention to: cross-widget imports, additions to `src/lib/`, new layered directories, gate-bypass markers (`--no-verify`, `// @ts-ignore`, skipped tests), and missing test colocation.
+- For each violation report: (1) which contract (Spec or Constitution) was broken and which clause, (2) impact, (3) remediation path, (4) test or check that would prevent regression.
 - Output one of:
-  - `PASS` — one line on what you verified.
-  - A numbered list of violations.
-  - `SPEC AMBIGUOUS` — if the spec cannot decide the question. Name the gap and escalate to `@Lead`.
+  - `PASS` — one line on what you verified, calling out both passes (e.g. "Spec DoD items 1–4 met; no Constitutional violations.").
+  - A numbered list of violations, each tagged `[Spec]` or `[Constitution]`.
+  - `SPEC AMBIGUOUS` — if the spec cannot decide the question. Name the gap and escalate to `@Lead`. (Constitutional ambiguity is rarer; if a Constitutional rule is itself unclear, flag it as a Constitution amendment candidate rather than blocking the PBI.)
 
 **Boundaries.**
 
