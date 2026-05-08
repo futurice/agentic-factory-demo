@@ -74,7 +74,26 @@ describe("PomodoroCard", () => {
     ).toBeInTheDocument();
   });
 
-  it.todo("pause freezes the ring offset");
+  it("pause freezes the ring offset", () => {
+    const { container } = render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    advanceSeconds(5);
+    expect(getTimeDisplay()).toHaveTextContent("24:55");
+    act(() => {
+      screen.getByRole("button", { name: /pause/i }).click();
+    });
+    const foreground = getRingSvg(container).querySelectorAll("circle")[1];
+    const offsetWhilePaused = foreground.getAttribute("stroke-dashoffset");
+    advanceSeconds(5);
+    const foregroundAfter = getRingSvg(container).querySelectorAll("circle")[1];
+    expect(foregroundAfter.getAttribute("stroke-dashoffset")).toBe(
+      offsetWhilePaused,
+    );
+    expect(foregroundAfter.getAttribute("stroke-dasharray")).toBe("1 1");
+    expect(foregroundAfter.getAttribute("pathLength")).toBe("1");
+  });
 
   it("reset returns running timer to 25:00 with start label", () => {
     render(<PomodoroCard />);
@@ -183,28 +202,86 @@ describe("PomodoroCard", () => {
     expect(rotated || offsetAnchored).toBe(true);
   });
 
-  it("ring pattern is invariant across timer states", () => {
+  it("ring switches to single-arc dasharray on start (pathLength=1, offset 0)", () => {
     const { container } = render(<PomodoroCard />);
-    const svg = getRingSvg(container);
-    const foreground = svg.querySelectorAll("circle")[1];
-    const idleDasharray = foreground.getAttribute("stroke-dasharray");
-    const idleDashoffset = foreground.getAttribute("stroke-dashoffset");
-    const idleTransform = foreground.getAttribute("transform");
-
     act(() => {
       screen.getByRole("button", { name: /start|play/i }).click();
     });
-    advanceSeconds(7);
-    expect(getTimeDisplay()).toHaveTextContent("24:53");
+    const foreground = getRingSvg(container).querySelectorAll("circle")[1];
+    expect(foreground.getAttribute("pathLength")).toBe("1");
+    expect(foreground.getAttribute("stroke-dasharray")).toBe("1 1");
+    const offset = Number(foreground.getAttribute("stroke-dashoffset"));
+    expect(offset).toBeCloseTo(0, 2);
+  });
 
-    const runningSvg = getRingSvg(container);
-    const runningForeground = runningSvg.querySelectorAll("circle")[1];
-    expect(runningForeground.getAttribute("stroke-dasharray")).toBe(
-      idleDasharray,
+  it("ring drains as time elapses (offset ≈ 0.5 at half, ≈ 1 at end)", () => {
+    const { container } = render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    // Half-way through work: 750s elapsed of 1500s.
+    advanceSeconds(750);
+    expect(getTimeDisplay()).toHaveTextContent("12:30");
+    let foreground = getRingSvg(container).querySelectorAll("circle")[1];
+    expect(foreground.getAttribute("pathLength")).toBe("1");
+    expect(foreground.getAttribute("stroke-dasharray")).toBe("1 1");
+    const halfOffset = Number(foreground.getAttribute("stroke-dashoffset"));
+    expect(halfOffset).toBeCloseTo(0.5, 2);
+
+    // Approach end: 1499s elapsed -> offset ≈ 0.9993, just before transition.
+    advanceSeconds(749);
+    expect(getTimeDisplay()).toHaveTextContent("00:01");
+    foreground = getRingSvg(container).querySelectorAll("circle")[1];
+    const nearEndOffset = Number(foreground.getAttribute("stroke-dashoffset"));
+    expect(nearEndOffset).toBeGreaterThan(0.99);
+    expect(nearEndOffset).toBeLessThanOrEqual(1);
+  });
+
+  it("ring during resting uses restMinutes as denominator", () => {
+    const { container } = render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    // Work (1500s) -> resting; advance halfway through 300s rest (150s).
+    advanceSeconds(1500);
+    expect(getTimeDisplay()).toHaveTextContent("05:00");
+    let foreground = getRingSvg(container).querySelectorAll("circle")[1];
+    // At the moment of phase advance the offset resets to ≈ 0.
+    expect(Number(foreground.getAttribute("stroke-dashoffset"))).toBeCloseTo(
+      0,
+      2,
     );
-    expect(runningForeground.getAttribute("stroke-dashoffset")).toBe(
-      idleDashoffset,
-    );
-    expect(runningForeground.getAttribute("transform")).toBe(idleTransform);
+
+    advanceSeconds(150);
+    expect(getTimeDisplay()).toHaveTextContent("02:30");
+    foreground = getRingSvg(container).querySelectorAll("circle")[1];
+    expect(foreground.getAttribute("pathLength")).toBe("1");
+    expect(foreground.getAttribute("stroke-dasharray")).toBe("1 1");
+    const offset = Number(foreground.getAttribute("stroke-dashoffset"));
+    // 150 / 300 = 0.5 — denominator is restMinutes * 60, not workMinutes * 60.
+    expect(offset).toBeCloseTo(0.5, 2);
+  });
+
+  it("ring returns to four-segment idle pattern on reset", () => {
+    const { container } = render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    advanceSeconds(10);
+    let foreground = getRingSvg(container).querySelectorAll("circle")[1];
+    expect(foreground.getAttribute("pathLength")).toBe("1");
+
+    act(() => {
+      screen.getByRole("button", { name: /reset/i }).click();
+    });
+    foreground = getRingSvg(container).querySelectorAll("circle")[1];
+    expect(foreground.getAttribute("pathLength")).toBeNull();
+    const dasharray = foreground.getAttribute("stroke-dasharray");
+    expect(dasharray).not.toBeNull();
+    const parts = dasharray!.split(/[\s,]+/).map(Number);
+    expect(parts.length).toBe(2);
+    expect(parts[0] / parts[1]).toBeCloseTo(2, 2);
+    const dashoffset = foreground.getAttribute("stroke-dashoffset");
+    expect(dashoffset === null || dashoffset === "0").toBe(true);
   });
 });

@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { formatMmSs } from "./format-time";
 
 type TimerState = "idle" | "running" | "paused" | "resting" | "completed";
+type Phase = "work" | "rest";
 
 export function PomodoroCard() {
   const [state, setState] = useState<TimerState>("idle");
+  const [phase, setPhase] = useState<Phase>("work");
   const [workMinutes, setWorkMinutes] = useState<number>(25);
   const [restMinutes, setRestMinutes] = useState<number>(5);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(25 * 60);
@@ -23,10 +25,12 @@ export function PomodoroCard() {
         // Phase advance: running (work) -> resting; resting -> running (work)
         if (state === "running") {
           setState("resting");
+          setPhase("rest");
           return restMinutes * 60;
         }
         // state === "resting"
         setState("running");
+        setPhase("work");
         return workMinutes * 60;
       });
     }, 1000);
@@ -46,16 +50,33 @@ export function PomodoroCard() {
       return;
     }
     setState("running");
+    if (state === "idle") {
+      setPhase("work");
+    }
   }
 
   function handleReset() {
     setState("idle");
+    setPhase("work");
     // Re-apply current minute settings via their setters so both stay wired
     // to a real consumer (PBI 06 will wire them to slider UI).
     setWorkMinutes(workMinutes);
     setRestMinutes(restMinutes);
     setSecondsRemaining(workMinutes * 60);
   }
+
+  // Ring contract (spec Decisions 4 + 7): in idle the foreground keeps the
+  // four-segment 2:1 dashed pattern (no pathLength). In running/paused/resting
+  // it switches to a single-arc encoding via pathLength=1 and a numeric
+  // stroke-dashoffset proportional to elapsed/duration. While paused the
+  // values freeze naturally because secondsRemaining stops changing.
+  const isSingleArc =
+    state === "running" || state === "paused" || state === "resting";
+  const ringDuration = (phase === "work" ? workMinutes : restMinutes) * 60;
+  const elapsed = ringDuration - secondsRemaining;
+  const dashOffsetRaw = ringDuration > 0 ? elapsed / ringDuration : 0;
+  // Round to 4 decimals (spec tolerance ±0.005).
+  const dashOffset = Math.round(dashOffsetRaw * 10000) / 10000;
 
   return (
     <article
@@ -102,17 +123,33 @@ export function PomodoroCard() {
             strokeWidth="10.24"
             fill="none"
           />
-          <circle
-            cx="172.332"
-            cy="128"
-            r="115.2"
-            stroke="#3B82F6"
-            strokeWidth="10.24"
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray="120.637 60.319"
-            transform="rotate(-90 172.332 128)"
-          />
+          {isSingleArc ? (
+            <circle
+              cx="172.332"
+              cy="128"
+              r="115.2"
+              stroke="#3B82F6"
+              strokeWidth="10.24"
+              fill="none"
+              strokeLinecap="round"
+              pathLength={1}
+              strokeDasharray="1 1"
+              strokeDashoffset={dashOffset}
+              transform="rotate(-90 172.332 128)"
+            />
+          ) : (
+            <circle
+              cx="172.332"
+              cy="128"
+              r="115.2"
+              stroke="#3B82F6"
+              strokeWidth="10.24"
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray="120.637 60.319"
+              transform="rotate(-90 172.332 128)"
+            />
+          )}
         </svg>
         <span className="text-[60px] leading-[60px] font-[var(--font-space-grotesk)] font-bold text-white">
           {formatMmSs(secondsRemaining)}
