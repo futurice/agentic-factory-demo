@@ -63,27 +63,31 @@ export function PomodoroCard() {
     }
   }
 
-  function handleReset() {
+  // Decision 12 (Amendment 2026-05-08 #4): any slider movement transitions the
+  // card to a clean idle state — observably equivalent to a Reset click. The
+  // helper below is the shared reset path; both slider handlers and the Reset
+  // button funnel through it. The helper writes are batched in a single
+  // render pass via React's automatic batching of event-handler state writes.
+  function resetToIdleWithNewMinutes(nextWork: number, nextRest: number) {
     setState("idle");
     setPhase("work");
-    setSecondsRemaining(workMinutes * 60);
+    setWorkMinutes(nextWork);
+    setRestMinutes(nextRest);
+    setSecondsRemaining(nextWork * 60);
+  }
+
+  function handleReset() {
+    resetToIdleWithNewMinutes(workMinutes, restMinutes);
   }
 
   function handleWorkMinutesChange(event: React.ChangeEvent<HTMLInputElement>) {
     const next = Number(event.target.value);
-    setWorkMinutes(next);
-    // While idle, the time display tracks workMinutes * 60 immediately.
-    // While running/paused/resting, leave secondsRemaining untouched — the
-    // new value applies on the next entry to a work phase or on reset.
-    if (state === "idle") {
-      setSecondsRemaining(next * 60);
-    }
+    resetToIdleWithNewMinutes(next, restMinutes);
   }
 
   function handleRestMinutesChange(event: React.ChangeEvent<HTMLInputElement>) {
     const next = Number(event.target.value);
-    setRestMinutes(next);
-    // Rest length never changes the idle display (idle shows work time).
+    resetToIdleWithNewMinutes(workMinutes, next);
   }
 
   // Ring contract (spec Decisions 8 + 9 + 10, post-2026-05-08 #3): the ring is

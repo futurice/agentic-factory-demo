@@ -133,8 +133,8 @@ describe("PomodoroCard", () => {
     ).toBeInTheDocument();
   });
 
-  it("slider changes mid-running do not retroactively rescale the current interval", () => {
-    render(<PomodoroCard />);
+  it("sliding Work length mid-running resets the clock to idle (Decision 12)", () => {
+    const { container } = render(<PomodoroCard />);
     act(() => {
       screen.getByRole("button", { name: /start|play/i }).click();
     });
@@ -147,12 +147,107 @@ describe("PomodoroCard", () => {
     act(() => {
       fireEvent.change(workSlider, { target: { value: "45" } });
     });
-    expect(getTimeDisplay()).toHaveTextContent("24:50");
-    // After reset, the new workMinutes is applied.
-    act(() => {
-      screen.getByRole("button", { name: /reset/i }).click();
-    });
+    // Slider movement IS the reset — no Reset click required.
     expect(getTimeDisplay()).toHaveTextContent("45:00");
+    expect(
+      screen.getByRole("button", { name: /start|play/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /pause/i })).toBeNull();
+    expect(getRingProgress(container)).toBe(0);
+    expect(
+      screen.getByRole("heading", { name: /^work$/i }),
+    ).toBeInTheDocument();
+    // Settings panel stays open across the reset.
+    expect(
+      screen.getByRole("region", { name: /timer settings/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("sliding Rest length mid-running resets the clock to idle (Decision 12)", () => {
+    const { container } = render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    advanceSeconds(10);
+    expect(getTimeDisplay()).toHaveTextContent("24:50");
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const restSlider = screen.getByRole("slider", { name: /rest length/i });
+    act(() => {
+      fireEvent.change(restSlider, { target: { value: "15" } });
+    });
+    // workMinutes unchanged → display becomes 25:00.
+    expect(getTimeDisplay()).toHaveTextContent("25:00");
+    expect(
+      screen.getByRole("button", { name: /start|play/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /pause/i })).toBeNull();
+    expect(getRingProgress(container)).toBe(0);
+    expect(
+      screen.getByRole("heading", { name: /^work$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: /timer settings/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("sliding either length while paused resets the clock to idle (Decision 12)", () => {
+    const { container } = render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    advanceSeconds(5);
+    act(() => {
+      screen.getByRole("button", { name: /pause/i }).click();
+    });
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const workSlider = screen.getByRole("slider", { name: /work length/i });
+    act(() => {
+      fireEvent.change(workSlider, { target: { value: "40" } });
+    });
+    expect(getTimeDisplay()).toHaveTextContent("40:00");
+    expect(
+      screen.getByRole("button", { name: /start|play/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /pause/i })).toBeNull();
+    expect(getRingProgress(container)).toBe(0);
+    expect(
+      screen.getByRole("heading", { name: /^work$/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("sliding either length while resting resets the clock to idle (Decision 12)", () => {
+    const { container } = render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    advanceSeconds(1500); // work -> resting
+    advanceSeconds(30); // resting at 04:30
+    expect(getTimeDisplay()).toHaveTextContent("04:30");
+    expect(
+      screen.getByRole("heading", { name: /^rest$/i }),
+    ).toBeInTheDocument();
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const workSlider = screen.getByRole("slider", { name: /work length/i });
+    act(() => {
+      fireEvent.change(workSlider, { target: { value: "35" } });
+    });
+    expect(getTimeDisplay()).toHaveTextContent("35:00");
+    expect(
+      screen.getByRole("button", { name: /start|play/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /pause/i })).toBeNull();
+    expect(getRingProgress(container)).toBe(0);
+    expect(
+      screen.getByRole("heading", { name: /^work$/i }),
+    ).toBeInTheDocument();
+    // Idle foreground returns to #3B82F6 (Decision 10).
+    expect(getRingStyle(container)).toContain("#3B82F6");
   });
 
   it("sliders return to defaults after a re-mount (no persistence)", () => {
