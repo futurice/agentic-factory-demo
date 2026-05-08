@@ -106,7 +106,7 @@ export function PomodoroCard() {
           aria-label="Settings"
           aria-expanded={settingsOpen}
           onClick={() => setSettingsOpen((open) => !open)}
-          className="flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[#99A1AF]"
+          className="flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[#99A1AF] hover:bg-[#1E2939] focus-visible:ring-2 focus-visible:ring-[#3B82F6] focus-visible:outline-none"
         >
           <svg
             width="20"
@@ -153,6 +153,7 @@ export function PomodoroCard() {
               strokeDasharray="1 1"
               strokeDashoffset={dashOffset}
               transform="rotate(-90 172.332 128)"
+              className="transition-[stroke-dashoffset] duration-300 ease-linear"
             />
           ) : (
             <circle
@@ -213,7 +214,7 @@ export function PomodoroCard() {
           onClick={handlePlayPause}
           disabled={state === "completed"}
           aria-label={playLabel}
-          className="flex h-[56px] w-[56px] items-center justify-center rounded-[10px] bg-[#155DFC] text-white disabled:opacity-50"
+          className="flex h-[56px] w-[56px] items-center justify-center rounded-[10px] bg-[#155DFC] text-white hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#3B82F6] focus-visible:outline-none disabled:opacity-50"
         >
           {isActive ? (
             <svg
@@ -242,7 +243,7 @@ export function PomodoroCard() {
           type="button"
           onClick={handleReset}
           aria-label="Reset"
-          className="flex h-[56px] w-[56px] items-center justify-center rounded-[10px] bg-[#1E2939] text-white"
+          className="flex h-[56px] w-[56px] items-center justify-center rounded-[10px] bg-[#1E2939] text-white hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#3B82F6] focus-visible:outline-none"
         >
           <svg
             width="20"

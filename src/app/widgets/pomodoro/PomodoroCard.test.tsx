@@ -447,6 +447,57 @@ describe("PomodoroCard", () => {
     expect(offset).toBeCloseTo(0.5, 2);
   });
 
+  it("play/pause, reset, and Settings buttons have hover and focus-visible utilities (polish)", () => {
+    render(<PomodoroCard />);
+    const playButton = screen.getByRole("button", { name: /start|play/i });
+    const resetButton = screen.getByRole("button", { name: /reset/i });
+    const settingsButton = screen.getByRole("button", { name: /settings/i });
+
+    expect(playButton.className).toMatch(/hover:(bg-|opacity-)/);
+    expect(playButton.className).toMatch(/focus-visible:/);
+    expect(resetButton.className).toMatch(/hover:(bg-|opacity-)/);
+    expect(resetButton.className).toMatch(/focus-visible:/);
+    expect(settingsButton.className).toMatch(/hover:(bg-|opacity-)/);
+    expect(settingsButton.className).toMatch(/focus-visible:/);
+  });
+
+  it("foreground <circle> carries a stroke-dashoffset transition while running (polish)", () => {
+    const { container } = render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    const foreground = getRingSvg(container).querySelectorAll("circle")[1];
+    const className = foreground.getAttribute("class") ?? "";
+    const style = foreground.getAttribute("style") ?? "";
+    const hasTransitionClass = /transition-\[stroke-dashoffset\]/.test(
+      className,
+    );
+    const hasTransitionStyle = style.includes("stroke-dashoffset");
+    expect(hasTransitionClass || hasTransitionStyle).toBe(true);
+  });
+
+  it("range inputs use accent-[#3B82F6] (polish)", () => {
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const sliders = screen.getAllByRole("slider");
+    expect(sliders.length).toBe(2);
+    for (const slider of sliders) {
+      expect(slider.className).toContain("accent-[#3B82F6]");
+    }
+  });
+
+  it("settings panel root uses palette background and #1E2939 border (polish)", () => {
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const panel = screen.getByRole("region", { name: /timer settings/i });
+    expect(panel.className).toMatch(/bg-\[#(101828|0B1220)\]/);
+    expect(panel.className).toMatch(/border-\[#1E2939\]/);
+  });
+
   it("ring returns to four-segment idle pattern on reset", () => {
     const { container } = render(<PomodoroCard />);
     act(() => {
