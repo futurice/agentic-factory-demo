@@ -12,6 +12,7 @@ export function PomodoroCard() {
   const [workMinutes, setWorkMinutes] = useState<number>(25);
   const [restMinutes, setRestMinutes] = useState<number>(5);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(25 * 60);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (state !== "running" && state !== "resting") {
@@ -58,11 +59,24 @@ export function PomodoroCard() {
   function handleReset() {
     setState("idle");
     setPhase("work");
-    // Re-apply current minute settings via their setters so both stay wired
-    // to a real consumer (PBI 06 will wire them to slider UI).
-    setWorkMinutes(workMinutes);
-    setRestMinutes(restMinutes);
     setSecondsRemaining(workMinutes * 60);
+  }
+
+  function handleWorkMinutesChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const next = Number(event.target.value);
+    setWorkMinutes(next);
+    // While idle, the time display tracks workMinutes * 60 immediately.
+    // While running/paused/resting, leave secondsRemaining untouched — the
+    // new value applies on the next entry to a work phase or on reset.
+    if (state === "idle") {
+      setSecondsRemaining(next * 60);
+    }
+  }
+
+  function handleRestMinutesChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const next = Number(event.target.value);
+    setRestMinutes(next);
+    // Rest length never changes the idle display (idle shows work time).
   }
 
   // Ring contract (spec Decisions 4 + 7): in idle the foreground keeps the
@@ -87,9 +101,12 @@ export function PomodoroCard() {
         <h2 className="text-[24px] leading-[32px] font-[var(--font-space-grotesk)] font-bold text-white">
           {titleText}
         </h2>
-        <span
-          aria-hidden="true"
-          className="flex h-[36px] w-[36px] items-center justify-center text-[#99A1AF]"
+        <button
+          type="button"
+          aria-label="Settings"
+          aria-expanded={settingsOpen}
+          onClick={() => setSettingsOpen((open) => !open)}
+          className="flex h-[36px] w-[36px] items-center justify-center rounded-[10px] text-[#99A1AF]"
         >
           <svg
             width="20"
@@ -104,7 +121,7 @@ export function PomodoroCard() {
             <circle cx="12" cy="12" r="3" />
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
-        </span>
+        </button>
       </header>
 
       <div
@@ -155,6 +172,40 @@ export function PomodoroCard() {
           {formatMmSs(secondsRemaining)}
         </span>
       </div>
+
+      {settingsOpen ? (
+        <section
+          aria-label="Timer settings"
+          className="flex flex-col gap-[12px] rounded-[10px] border border-[#1E2939] bg-[#0B1220] p-[16px]"
+        >
+          <label className="flex flex-col gap-[8px] text-[14px] leading-[20px] font-[var(--font-inter)] text-[#99A1AF]">
+            <span>{`Work length — ${workMinutes} min`}</span>
+            <input
+              type="range"
+              min="5"
+              max="60"
+              step="1"
+              value={workMinutes}
+              onChange={handleWorkMinutesChange}
+              aria-label="Work length"
+              className="accent-[#3B82F6]"
+            />
+          </label>
+          <label className="flex flex-col gap-[8px] text-[14px] leading-[20px] font-[var(--font-inter)] text-[#99A1AF]">
+            <span>{`Rest length — ${restMinutes} min`}</span>
+            <input
+              type="range"
+              min="1"
+              max="30"
+              step="1"
+              value={restMinutes}
+              onChange={handleRestMinutesChange}
+              aria-label="Rest length"
+              className="accent-[#3B82F6]"
+            />
+          </label>
+        </section>
+      ) : null}
 
       <div className="flex items-center justify-center gap-[16px]">
         <button

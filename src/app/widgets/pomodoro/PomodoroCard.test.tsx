@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { PomodoroCard } from "./PomodoroCard";
 
 function getRingSvg(container: HTMLElement): SVGSVGElement {
@@ -42,9 +42,194 @@ describe("PomodoroCard", () => {
     expect(screen.getByRole("button", { name: /reset/i })).toBeEnabled();
   });
 
-  it("settings gear is decorative (aria-hidden, not a button)", () => {
+  it("renders a real Settings button (replaces former decorative gear)", () => {
     render(<PomodoroCard />);
-    expect(screen.queryByRole("button", { name: /settings/i })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /settings/i }),
+    ).toBeInTheDocument();
+    // Panel is collapsed on initial mount.
+    expect(
+      screen.queryByRole("region", { name: /timer settings/i }),
+    ).toBeNull();
+  });
+
+  it("settings panel toggles open and closed", () => {
+    render(<PomodoroCard />);
+    const settingsButton = screen.getByRole("button", { name: /settings/i });
+    act(() => {
+      settingsButton.click();
+    });
+    expect(
+      screen.getByRole("region", { name: /timer settings/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("slider", { name: /work length/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("slider", { name: /rest length/i }),
+    ).toBeInTheDocument();
+    act(() => {
+      settingsButton.click();
+    });
+    expect(
+      screen.queryByRole("region", { name: /timer settings/i }),
+    ).toBeNull();
+  });
+
+  it("sliders have correct min/max/step/default attributes", () => {
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const workSlider = screen.getByRole("slider", { name: /work length/i });
+    expect(workSlider).toHaveAttribute("type", "range");
+    expect(workSlider).toHaveAttribute("min", "5");
+    expect(workSlider).toHaveAttribute("max", "60");
+    expect(workSlider).toHaveAttribute("step", "1");
+    expect(workSlider).toHaveValue("25");
+
+    const restSlider = screen.getByRole("slider", { name: /rest length/i });
+    expect(restSlider).toHaveAttribute("type", "range");
+    expect(restSlider).toHaveAttribute("min", "1");
+    expect(restSlider).toHaveAttribute("max", "30");
+    expect(restSlider).toHaveAttribute("step", "1");
+    expect(restSlider).toHaveValue("5");
+  });
+
+  it("changing Work length while idle updates the time display", () => {
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const workSlider = screen.getByRole("slider", { name: /work length/i });
+    act(() => {
+      fireEvent.change(workSlider, { target: { value: "30" } });
+    });
+    expect(getTimeDisplay()).toHaveTextContent("30:00");
+    expect(
+      screen.getByRole("heading", { name: /work time/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("changing Rest length while idle does not change the time display", () => {
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const restSlider = screen.getByRole("slider", { name: /rest length/i });
+    act(() => {
+      fireEvent.change(restSlider, { target: { value: "10" } });
+    });
+    expect(getTimeDisplay()).toHaveTextContent("25:00");
+    expect(
+      screen.getByRole("heading", { name: /work time/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("slider changes mid-running do not retroactively rescale the current interval", () => {
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    advanceSeconds(10);
+    expect(getTimeDisplay()).toHaveTextContent("24:50");
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const workSlider = screen.getByRole("slider", { name: /work length/i });
+    act(() => {
+      fireEvent.change(workSlider, { target: { value: "45" } });
+    });
+    expect(getTimeDisplay()).toHaveTextContent("24:50");
+    // After reset, the new workMinutes is applied.
+    act(() => {
+      screen.getByRole("button", { name: /reset/i }).click();
+    });
+    expect(getTimeDisplay()).toHaveTextContent("45:00");
+  });
+
+  it("sliders return to defaults after a re-mount (no persistence)", () => {
+    const first = render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const workSlider = screen.getByRole("slider", { name: /work length/i });
+    act(() => {
+      fireEvent.change(workSlider, { target: { value: "50" } });
+    });
+    expect(workSlider).toHaveValue("50");
+    first.unmount();
+
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    expect(screen.getByRole("slider", { name: /work length/i })).toHaveValue(
+      "25",
+    );
+    expect(screen.getByRole("slider", { name: /rest length/i })).toHaveValue(
+      "5",
+    );
+  });
+
+  it("rest-length slider end-to-end: 10 min rest applied at phase advance", () => {
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const restSlider = screen.getByRole("slider", { name: /rest length/i });
+    act(() => {
+      fireEvent.change(restSlider, { target: { value: "10" } });
+    });
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    advanceSeconds(1500);
+    expect(
+      screen.getByRole("heading", { name: /rest time/i }),
+    ).toBeInTheDocument();
+    expect(getTimeDisplay()).toHaveTextContent("10:00");
+  });
+
+  it("opening settings panel during resting does not stop the timer", () => {
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    advanceSeconds(1500); // work -> resting (5:00)
+    advanceSeconds(30); // resting -> 4:30
+    expect(getTimeDisplay()).toHaveTextContent("04:30");
+    expect(
+      screen.getByRole("heading", { name: /rest time/i }),
+    ).toBeInTheDocument();
+
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    expect(
+      screen.getByRole("region", { name: /timer settings/i }),
+    ).toBeInTheDocument();
+    // Title still Rest Time and timer still ticks.
+    expect(
+      screen.getByRole("heading", { name: /rest time/i }),
+    ).toBeInTheDocument();
+    advanceSeconds(1);
+    expect(getTimeDisplay()).toHaveTextContent("04:29");
+  });
+
+  it("slider boundaries: work [5,60], rest [1,30]", () => {
+    render(<PomodoroCard />);
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+    const workSlider = screen.getByRole("slider", { name: /work length/i });
+    expect(workSlider).toHaveAttribute("min", "5");
+    expect(workSlider).toHaveAttribute("max", "60");
+    expect(workSlider).toHaveAttribute("step", "1");
+    const restSlider = screen.getByRole("slider", { name: /rest length/i });
+    expect(restSlider).toHaveAttribute("min", "1");
+    expect(restSlider).toHaveAttribute("max", "30");
+    expect(restSlider).toHaveAttribute("step", "1");
   });
 
   it("start transitions idle to running and decrements once per second", () => {
