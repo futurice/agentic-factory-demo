@@ -57,3 +57,4 @@ Dispatch the Analyst subagent (`subagent_type: analyst`) with this prompt:
 - Do **not** edit specs, write code, or change PBIs yourself.
 - Do **not** auto-invoke `/ship`. Always human-gated.
 - On any unexpected verdict format, stop and surface the raw output.
+- One PBI at a time. No parallel `/build`, even across domains. PBIs are isolated by design but the working tree is not — concurrent dev sessions stage into the same tree and produce bundled, mislabeled commits (see pomodoro retro 2026-05-08 → commit `db1f8b3`, which mixed app-shell PBI 02 staging with pomodoro PBI 12 staging).

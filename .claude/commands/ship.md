@@ -29,6 +29,7 @@ Compute the diff against `main`: `git diff --name-only main...HEAD`. Then run ea
 - **`src/lib/` growth** — if any file under `src/lib/` was added or modified, mark yellow and require a one-line justification (Constitution: only universal utilities allowed there).
 - **No layered-directory introduction** — `git diff --name-only main...HEAD --diff-filter=A` must not introduce top-level dirs under `src/` other than the existing `app/` and `lib/`.
 - **No gate-bypass markers in diff** — grep the diff for `--no-verify`, `@ts-ignore`, `it.skip`, `describe.skip`, `xit(`, `xdescribe(`. Any hit is red.
+- **Same-commit-rule check (Constitution §27).** For each commit on the branch since `main`, if the commit touches `src/app/widgets/<name>/` for any widget `<name>` whose `.specs/<name>/spec.md` was modified on the same branch but in a _different_ commit, mark red and surface the offending pair `(<code-commit-sha>, <spec-commit-sha>)`. Concretely: walk `git log --format="%H" main..HEAD` and `git show --name-only <sha>` per commit; flag cases where a code path under `src/app/widgets/<name>/` and the matching `.specs/<name>/spec.md` are split across commits. Catch-up commits (a single "docs(specs): land …" commit covering multiple prior code commits) are the canonical failure mode this check exists to prevent.
 
 Print the results as a green/red checklist. If any check is red, stop and ask the learner whether to fix or to proceed (rare cases where a red is intentional — e.g. an explicit Constitution amendment).
 
