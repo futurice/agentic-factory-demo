@@ -80,6 +80,7 @@ Quality gate inside `/build` is `lint` + `tsc --noEmit` (implicit) + `test:run`.
 - **CSS Modules only for genuinely scoped, non-utility cases** (see `page.module.css`). Tailwind is the default.
 - **Fonts via `next/font/google`** — never `<link rel="stylesheet">`.
 - **No `--no-verify`, no `// @ts-ignore`, no skipped tests** to make a gate pass (factory rule).
+- **Tests assert what they can observe under jsdom.** Tailwind utilities do not fully resolve to computed style under jsdom + Vitest, so most widget tests assert on `className` substring presence (e.g. `expect(card.className).toMatch(/p-\[24px\]/)`) rather than `getComputedStyle(card).padding === "24px"`. This is a known limit of the framework choice, not a defect. Two consequences: (a) a regression in `globals.css` (e.g. an unlayered universal-selector reset overriding utility classes) is invisible to `npm run test:run` even though the rendered output is wrong; (b) hydration drift between Tailwind class shapes (e.g. `font-[var(--font-…)]` vs. `[font-family:var(--font-…)]`) can pass the className regex on both sides while emitting a `console.error` in the browser. Counter-measures: at minimum, install a `console.error` spy on any Vitest scenario that mounts a client component, and avoid universal-selector resets in `globals.css` that sit outside an `@layer`. Pomodoro Amendment 2026-05-08 #6 (`.specs/pomodoro/spec.md`, `.specs/pomodoro/pbi/13-hydration-guardrail.md`) is the canonical worked example.
 
 ## Personas & slash commands
 

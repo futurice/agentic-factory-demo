@@ -15,6 +15,8 @@ The Critic validates `/review` against both contracts. A PBI passes only when ne
 - **`<link rel="stylesheet">` for fonts.** Use `next/font/google`.
 - **Bypassing quality gates.** No `--no-verify`, no `// @ts-ignore`, no skipped tests to make a gate pass.
 - **DRY across widgets.** Two widgets that look similar stay similar. Shared abstractions are merge-conflict hotspots and let one learner's refactor break another's widget.
+- **Hydration-unsafe patterns in client components.** Two specific shapes are forbidden because they ship a class mismatch between server and client renders that `lint` / `tsc` / `test:run` do not catch: (a) assigning a JavaScript `number` (not `string`) to a CSS custom property at the React-style boundary, e.g. `style={{ "--x": 0.5 }}` — coerce with `String(...)` instead; (b) Tailwind v4's `font-[var(--font-…)]` shorthand on a CSS variable — use the unambiguous arbitrary-property form `[font-family:var(--font-…)]`. Codified after pomodoro Amendment 2026-05-08 #6 (`.specs/pomodoro/spec.md`, `.specs/pomodoro/pbi/13-hydration-guardrail.md`).
+- **Suppressing hydration warnings to dodge the contract.** `suppressHydrationWarning`, wrapping a component in `<ClientOnly>` / `dynamic(..., { ssr: false })`, or `useEffect`-gated mounts to opt out of SSR are not acceptable fixes for a hydration mismatch. The contract is that the component renders identically on server and client.
 
 ## ALWAYS
 
