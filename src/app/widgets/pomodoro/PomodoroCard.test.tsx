@@ -674,7 +674,7 @@ describe("PomodoroCard", () => {
     expect(heading.tagName).toBe("H2");
     expect(heading.className).toMatch(/text-\[12px\]/);
     expect(heading.className).toMatch(/text-\[#99A1AF\]/);
-    expect(heading.className).toMatch(/font-\[var\(--font-inter\)\]/);
+    expect(heading.className).toMatch(/\[font-family:var\(--font-inter\)\]/);
     // Negative DoD bullet: no top-of-card "Work Time"/"Rest Time" heading
     // anywhere in the card in any state.
     expect(
@@ -748,6 +748,18 @@ describe("PomodoroCard", () => {
     ).toBeNull();
   });
 
+  it("card root applies symmetric p-[24px] padding (Decision 13)", () => {
+    const { container } = render(<PomodoroCard />);
+    const card = container.querySelector<HTMLElement>(
+      '[aria-label="Pomodoro timer"]',
+    );
+    expect(card).not.toBeNull();
+    const className = card!.className;
+    expect(className).toMatch(/p-\[24px\]/);
+    expect(className).not.toMatch(/p-\[33px\]/);
+    expect(className).not.toMatch(/pb-\[32px\]/);
+  });
+
   it("phase label heading precedes the MM:SS time display in DOM order (above the time)", () => {
     render(<PomodoroCard />);
     const heading = screen.getByRole("heading", { name: /^work$/i });
@@ -756,5 +768,122 @@ describe("PomodoroCard", () => {
     // first in DOM order (visually centered above the MM:SS span).
     const position = heading.compareDocumentPosition(timeDisplay);
     expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  // Amendment 2026-05-08 #6 — hydration regression guardrail.
+
+  it("card mounts without a hydration warning", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      render(<PomodoroCard />);
+      const hydrationRegex =
+        /Hydration|did not match|server rendered HTML didn't match/i;
+      for (const call of errorSpy.mock.calls) {
+        const first = call[0];
+        if (typeof first === "string") {
+          expect(first).not.toMatch(hydrationRegex);
+        }
+      }
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it("--progress is a string in [0, 1] across all states", () => {
+    const { container } = render(<PomodoroCard />);
+    const progressRegex = /^[01](\.\d+)?$/;
+    const styleProgressRegex = /--progress:\s*[01](\.\d+)?/;
+
+    function assertProgressIsString(stateLabel: string) {
+      const ring = getRingContainer(container);
+      const value = ring.style.getPropertyValue("--progress");
+      expect(
+        typeof value,
+        `${stateLabel}: getPropertyValue returns a string`,
+      ).toBe("string");
+      expect(
+        value,
+        `${stateLabel}: --progress matches numeric string regex`,
+      ).toMatch(progressRegex);
+      const styleAttr = getRingStyle(container);
+      expect(
+        styleAttr,
+        `${stateLabel}: inline style attribute serializes --progress as a numeric string`,
+      ).toMatch(styleProgressRegex);
+    }
+
+    // idle
+    assertProgressIsString("idle");
+
+    // running (work)
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    advanceSeconds(5);
+    assertProgressIsString("running");
+
+    // paused (paused-from-work)
+    act(() => {
+      screen.getByRole("button", { name: /pause/i }).click();
+    });
+    assertProgressIsString("paused");
+
+    // resting — resume and run the work interval to zero so phase advances
+    act(() => {
+      screen.getByRole("button", { name: /start|play|resume/i }).click();
+    });
+    advanceSeconds(1495);
+    expect(getTimeDisplay()).toHaveTextContent("05:00");
+    expect(
+      screen.getByRole("heading", { name: /^rest$/i }),
+    ).toBeInTheDocument();
+    assertProgressIsString("resting");
+  });
+
+  it("font-family classes use the arbitrary-property form", () => {
+    render(<PomodoroCard />);
+    // Open settings so the slider <label>s are in the DOM.
+    act(() => {
+      screen.getByRole("button", { name: /settings/i }).click();
+    });
+
+    const fontFamilyRegex =
+      /\[font-family:var\(--font-(inter|space-grotesk)\)\]/;
+    const forbiddenRegex = /font-\[var\(--font-/;
+
+    // Card root.
+    const card = screen.getByLabelText("Pomodoro timer");
+    expect(card.className).toMatch(fontFamilyRegex);
+
+    // In-ring phase heading <h2>.
+    const heading = screen.getByRole("heading", { name: /^work$/i });
+    expect(heading.tagName).toBe("H2");
+    expect(heading.className).toMatch(fontFamilyRegex);
+
+    // Time display <span>.
+    const timeDisplay = getTimeDisplay();
+    expect(timeDisplay.tagName).toBe("SPAN");
+    // Time display uses Space Grotesk specifically.
+    expect(timeDisplay.className).toMatch(
+      /\[font-family:var\(--font-space-grotesk\)\]/,
+    );
+
+    // Both settings slider <label>s.
+    const labels = card.querySelectorAll("label");
+    expect(labels.length).toBe(2);
+    for (const label of labels) {
+      expect(label.className).toMatch(fontFamilyRegex);
+    }
+
+    // Sweep: no element anywhere in the card uses the deprecated shorthand.
+    const allElements = card.querySelectorAll("*");
+    expect(card.className).not.toMatch(forbiddenRegex);
+    for (const el of allElements) {
+      const className =
+        typeof (el as HTMLElement).className === "string"
+          ? (el as HTMLElement).className
+          : "";
+      expect(className).not.toMatch(forbiddenRegex);
+    }
   });
 });
