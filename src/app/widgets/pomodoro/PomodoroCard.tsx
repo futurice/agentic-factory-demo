@@ -79,18 +79,37 @@ export function PomodoroCard() {
     // Rest length never changes the idle display (idle shows work time).
   }
 
-  // Ring contract (spec Decisions 4 + 7): in idle the foreground keeps the
-  // four-segment 2:1 dashed pattern (no pathLength). In running/paused/resting
-  // it switches to a single-arc encoding via pathLength=1 and a numeric
-  // stroke-dashoffset proportional to elapsed/duration. While paused the
-  // values freeze naturally because secondsRemaining stops changing.
-  const isSingleArc =
+  // Ring contract (spec Decisions 8 + 9 + 10, post-2026-05-08 #3): the ring is
+  // rendered as a single CSS element exposing a `--progress` custom property
+  // in 0..1 equal to elapsed / duration. The foreground color is phase-
+  // dependent: #3B82F6 in idle/completed, #F87171 in work (running and
+  // paused-from-work), #34D399 in rest (resting and paused-from-rest). The
+  // track stays #111827. The visible arc covers the full ring at progress=0
+  // and retracts clockwise from 12 o'clock as progress increases toward 1.
+  const isActiveOrPaused =
     state === "running" || state === "paused" || state === "resting";
   const ringDuration = (phase === "work" ? workMinutes : restMinutes) * 60;
   const elapsed = ringDuration - secondsRemaining;
-  const dashOffsetRaw = ringDuration > 0 ? elapsed / ringDuration : 0;
+  const progressRaw =
+    isActiveOrPaused && ringDuration > 0 ? elapsed / ringDuration : 0;
   // Round to 4 decimals (spec tolerance ±0.005).
-  const dashOffset = Math.round(dashOffsetRaw * 10000) / 10000;
+  const progress = Math.round(progressRaw * 10000) / 10000;
+  const ringForeground =
+    state === "idle" || state === "completed"
+      ? "#3B82F6"
+      : phase === "work"
+        ? "#F87171"
+        : "#34D399";
+  // conic-gradient starts at 12 o'clock and proceeds clockwise. The track
+  // grows clockwise from 12 as progress increases; the foreground (remaining
+  // time) retracts clockwise from 12. Track color is #111827 (Decision 8).
+  const ringBackground = `conic-gradient(#111827 0deg, #111827 calc(var(--progress) * 360deg), ${ringForeground} calc(var(--progress) * 360deg), ${ringForeground} 360deg)`;
+  // Ring shape via radial mask: transparent inner disc + transparent beyond
+  // outer radius produces a ring with stroke ≈ 10.24px (matching the prior
+  // SVG `r=115.2` / `stroke-width=10.24` ring). Inner radius = 115.2 − 10.24
+  // = 104.96px.
+  const ringMask =
+    "radial-gradient(circle at center, transparent 104.96px, black 105.96px, black 115.2px, transparent 116.2px)";
 
   return (
     <article
@@ -128,48 +147,20 @@ export function PomodoroCard() {
         className="relative mx-auto flex h-[256px] w-[344.66px] items-center justify-center"
         aria-hidden="true"
       >
-        <svg
-          viewBox="0 0 344.664 256"
-          className="absolute inset-0 h-full w-full"
-        >
-          <circle
-            cx="172.332"
-            cy="128"
-            r="115.2"
-            stroke="#111827"
-            strokeWidth="10.24"
-            fill="none"
-          />
-          {isSingleArc ? (
-            <circle
-              cx="172.332"
-              cy="128"
-              r="115.2"
-              stroke="#3B82F6"
-              strokeWidth="10.24"
-              fill="none"
-              strokeLinecap="round"
-              pathLength={1}
-              strokeDasharray="1 1"
-              strokeDashoffset={dashOffset}
-              transform="rotate(-90 172.332 128)"
-              className="transition-[stroke-dashoffset] duration-300 ease-linear"
-            />
-          ) : (
-            <circle
-              cx="172.332"
-              cy="128"
-              r="115.2"
-              stroke="#3B82F6"
-              strokeWidth="10.24"
-              fill="none"
-              strokeLinecap="round"
-              strokeDasharray="120.637 60.319"
-              transform="rotate(-90 172.332 128)"
-            />
-          )}
-        </svg>
-        <span className="text-[60px] leading-[60px] font-[var(--font-space-grotesk)] font-bold text-white">
+        <div
+          data-testid="ring"
+          className="absolute top-1/2 left-1/2 h-[256px] w-[256px] -translate-x-1/2 -translate-y-1/2"
+          style={
+            {
+              "--progress": progress,
+              background: ringBackground,
+              mask: ringMask,
+              WebkitMask: ringMask,
+              transition: "background 300ms linear",
+            } as React.CSSProperties
+          }
+        />
+        <span className="relative text-[60px] leading-[60px] font-[var(--font-space-grotesk)] font-bold text-white">
           {formatMmSs(secondsRemaining)}
         </span>
       </div>

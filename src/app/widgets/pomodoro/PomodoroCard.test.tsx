@@ -2,15 +2,22 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { PomodoroCard } from "./PomodoroCard";
 
-function getRingSvg(container: HTMLElement): SVGSVGElement {
-  const svgs = container.querySelectorAll("svg");
-  const ring = Array.from(svgs).find(
-    (el) => el.getAttribute("viewBox") === "0 0 344.664 256",
-  );
+function getRingContainer(container: HTMLElement): HTMLElement {
+  const ring = container.querySelector<HTMLElement>('[data-testid="ring"]');
   if (!ring) {
-    throw new Error("Ring SVG with viewBox '0 0 344.664 256' not found");
+    throw new Error("Ring container (data-testid='ring') not found");
   }
-  return ring as SVGSVGElement;
+  return ring;
+}
+
+function getRingProgress(container: HTMLElement): number {
+  const ring = getRingContainer(container);
+  const value = ring.style.getPropertyValue("--progress").trim();
+  return Number(value);
+}
+
+function getRingStyle(container: HTMLElement): string {
+  return getRingContainer(container).getAttribute("style") ?? "";
 }
 
 function advanceSeconds(seconds: number) {
@@ -259,7 +266,7 @@ describe("PomodoroCard", () => {
     ).toBeInTheDocument();
   });
 
-  it("pause freezes the ring offset", () => {
+  it("pause freezes the ring --progress (CSS encoding)", () => {
     const { container } = render(<PomodoroCard />);
     act(() => {
       screen.getByRole("button", { name: /start|play/i }).click();
@@ -269,15 +276,11 @@ describe("PomodoroCard", () => {
     act(() => {
       screen.getByRole("button", { name: /pause/i }).click();
     });
-    const foreground = getRingSvg(container).querySelectorAll("circle")[1];
-    const offsetWhilePaused = foreground.getAttribute("stroke-dashoffset");
+    const progressWhilePaused = getRingProgress(container);
     advanceSeconds(5);
-    const foregroundAfter = getRingSvg(container).querySelectorAll("circle")[1];
-    expect(foregroundAfter.getAttribute("stroke-dashoffset")).toBe(
-      offsetWhilePaused,
-    );
-    expect(foregroundAfter.getAttribute("stroke-dasharray")).toBe("1 1");
-    expect(foregroundAfter.getAttribute("pathLength")).toBe("1");
+    expect(getRingProgress(container)).toBe(progressWhilePaused);
+    // Foreground color is #F87171 (paused-from-work; Decision 10).
+    expect(getRingStyle(container)).toContain("#F87171");
   });
 
   it("reset returns running timer to 25:00 with start label", () => {
@@ -342,64 +345,77 @@ describe("PomodoroCard", () => {
     expect(screen.getByRole("button", { name: /pause/i })).toBeInTheDocument();
   });
 
-  it("renders the four-segment dashed ring matching Figma node 1:11", () => {
+  it("renders the idle ring as a flat foreground (Decision 9: no SVG, no segmentation)", () => {
     const { container } = render(<PomodoroCard />);
-    const svg = getRingSvg(container);
-    expect(svg.getAttribute("viewBox")).toBe("0 0 344.664 256");
+    const ring = getRingContainer(container);
 
-    const circles = svg.querySelectorAll("circle");
-    expect(circles.length).toBe(2);
+    // Decision 9 / Regression Guardrail: no <svg> or <circle> descendant inside
+    // the ring container in any state.
+    expect(ring.querySelectorAll("svg, circle").length).toBe(0);
 
-    const [track, foreground] = Array.from(circles);
+    // Idle foreground color is #3B82F6 (Decision 10).
+    const style = ring.getAttribute("style") ?? "";
+    expect(style).toContain("#3B82F6");
 
-    // Track circle
-    expect(track.getAttribute("cx")).toBe("172.332");
-    expect(track.getAttribute("cy")).toBe("128");
-    expect(track.getAttribute("r")).toBe("115.2");
-    expect(track.getAttribute("stroke")).toBe("#111827");
-    expect(track.getAttribute("stroke-width")).toBe("10.24");
-    expect(track.getAttribute("fill")).toBe("none");
-    expect(track.getAttribute("stroke-dasharray")).toBeNull();
+    // Track color is #111827 (Decision 8).
+    expect(style).toContain("#111827");
 
-    // Foreground circle
-    expect(foreground.getAttribute("cx")).toBe("172.332");
-    expect(foreground.getAttribute("cy")).toBe("128");
-    expect(foreground.getAttribute("r")).toBe("115.2");
-    expect(foreground.getAttribute("stroke")).toBe("#3B82F6");
-    expect(foreground.getAttribute("stroke-width")).toBe("10.24");
-    expect(foreground.getAttribute("fill")).toBe("none");
-    expect(foreground.getAttribute("stroke-linecap")).toBe("round");
-
-    // Dasharray ratio is 2:1 (dash 60° / gap 30°), within two-decimal tolerance
-    const dasharray = foreground.getAttribute("stroke-dasharray");
-    expect(dasharray).not.toBeNull();
-    const parts = dasharray!.split(/[\s,]+/).map(Number);
-    expect(parts.length).toBe(2);
-    const [dash, gap] = parts;
-    expect(dash / gap).toBeCloseTo(2, 2);
-
-    // Anchored at 12 o'clock via -90° rotation about (172.332, 128)
-    // OR an equivalent stroke-dashoffset (spec permits either implementation).
-    const transform = foreground.getAttribute("transform");
-    const dashoffset = foreground.getAttribute("stroke-dashoffset");
-    const rotated = transform === "rotate(-90 172.332 128)";
-    const offsetAnchored = dashoffset !== null && dashoffset !== "0";
-    expect(rotated || offsetAnchored).toBe(true);
+    // Idle --progress is 0 (the visible arc covers the full ring; flat idle).
+    expect(getRingProgress(container)).toBe(0);
   });
 
-  it("ring switches to single-arc dasharray on start (pathLength=1, offset 0)", () => {
+  it("ring container has no <svg> or <circle> descendant in any state (Decision 9)", () => {
+    const { container } = render(<PomodoroCard />);
+    const ring = getRingContainer(container);
+
+    // idle
+    expect(ring.querySelectorAll("svg, circle").length).toBe(0);
+
+    // running (work)
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    expect(ring.querySelectorAll("svg, circle").length).toBe(0);
+
+    // paused-from-work
+    advanceSeconds(5);
+    act(() => {
+      screen.getByRole("button", { name: /pause/i }).click();
+    });
+    expect(ring.querySelectorAll("svg, circle").length).toBe(0);
+
+    // running again then resting
+    act(() => {
+      screen.getByRole("button", { name: /start|play|resume/i }).click();
+    });
+    advanceSeconds(1495);
+    expect(getTimeDisplay()).toHaveTextContent("05:00");
+    expect(ring.querySelectorAll("svg, circle").length).toBe(0);
+
+    // paused-from-rest
+    act(() => {
+      screen.getByRole("button", { name: /pause/i }).click();
+    });
+    expect(ring.querySelectorAll("svg, circle").length).toBe(0);
+
+    // post-reset (idle)
+    act(() => {
+      screen.getByRole("button", { name: /reset/i }).click();
+    });
+    expect(ring.querySelectorAll("svg, circle").length).toBe(0);
+  });
+
+  it("ring switches to active drain on start (--progress ≈ 0)", () => {
     const { container } = render(<PomodoroCard />);
     act(() => {
       screen.getByRole("button", { name: /start|play/i }).click();
     });
-    const foreground = getRingSvg(container).querySelectorAll("circle")[1];
-    expect(foreground.getAttribute("pathLength")).toBe("1");
-    expect(foreground.getAttribute("stroke-dasharray")).toBe("1 1");
-    const offset = Number(foreground.getAttribute("stroke-dashoffset"));
-    expect(offset).toBeCloseTo(0, 2);
+    expect(getRingProgress(container)).toBeCloseTo(0, 2);
+    // Foreground color is #F87171 in running (work).
+    expect(getRingStyle(container)).toContain("#F87171");
   });
 
-  it("ring drains as time elapses (offset ≈ 0.5 at half, ≈ 1 at end)", () => {
+  it("ring drains clockwise as time elapses (--progress ≈ 0.5 at half, ≈ 1 at end)", () => {
     const { container } = render(<PomodoroCard />);
     act(() => {
       screen.getByRole("button", { name: /start|play/i }).click();
@@ -407,19 +423,15 @@ describe("PomodoroCard", () => {
     // Half-way through work: 750s elapsed of 1500s.
     advanceSeconds(750);
     expect(getTimeDisplay()).toHaveTextContent("12:30");
-    let foreground = getRingSvg(container).querySelectorAll("circle")[1];
-    expect(foreground.getAttribute("pathLength")).toBe("1");
-    expect(foreground.getAttribute("stroke-dasharray")).toBe("1 1");
-    const halfOffset = Number(foreground.getAttribute("stroke-dashoffset"));
-    expect(halfOffset).toBeCloseTo(0.5, 2);
+    expect(getRingProgress(container)).toBeCloseTo(0.5, 2);
+    expect(getRingStyle(container)).toContain("#F87171");
 
-    // Approach end: 1499s elapsed -> offset ≈ 0.9993, just before transition.
+    // Approach end: 1499s elapsed -> --progress ≈ 0.9993.
     advanceSeconds(749);
     expect(getTimeDisplay()).toHaveTextContent("00:01");
-    foreground = getRingSvg(container).querySelectorAll("circle")[1];
-    const nearEndOffset = Number(foreground.getAttribute("stroke-dashoffset"));
-    expect(nearEndOffset).toBeGreaterThan(0.99);
-    expect(nearEndOffset).toBeLessThanOrEqual(1);
+    const nearEnd = getRingProgress(container);
+    expect(nearEnd).toBeGreaterThan(0.99);
+    expect(nearEnd).toBeLessThanOrEqual(1);
   });
 
   it("ring during resting uses restMinutes as denominator", () => {
@@ -427,24 +439,18 @@ describe("PomodoroCard", () => {
     act(() => {
       screen.getByRole("button", { name: /start|play/i }).click();
     });
-    // Work (1500s) -> resting; advance halfway through 300s rest (150s).
+    // Work (1500s) -> resting; at phase advance --progress resets to 0 and
+    // the foreground color flips to #34D399 (Decision 10) in the same render.
     advanceSeconds(1500);
     expect(getTimeDisplay()).toHaveTextContent("05:00");
-    let foreground = getRingSvg(container).querySelectorAll("circle")[1];
-    // At the moment of phase advance the offset resets to ≈ 0.
-    expect(Number(foreground.getAttribute("stroke-dashoffset"))).toBeCloseTo(
-      0,
-      2,
-    );
+    expect(getRingProgress(container)).toBeCloseTo(0, 2);
+    expect(getRingStyle(container)).toContain("#34D399");
 
     advanceSeconds(150);
     expect(getTimeDisplay()).toHaveTextContent("02:30");
-    foreground = getRingSvg(container).querySelectorAll("circle")[1];
-    expect(foreground.getAttribute("pathLength")).toBe("1");
-    expect(foreground.getAttribute("stroke-dasharray")).toBe("1 1");
-    const offset = Number(foreground.getAttribute("stroke-dashoffset"));
     // 150 / 300 = 0.5 — denominator is restMinutes * 60, not workMinutes * 60.
-    expect(offset).toBeCloseTo(0.5, 2);
+    expect(getRingProgress(container)).toBeCloseTo(0.5, 2);
+    expect(getRingStyle(container)).toContain("#34D399");
   });
 
   it("play/pause, reset, and Settings buttons have hover and focus-visible utilities (polish)", () => {
@@ -461,18 +467,17 @@ describe("PomodoroCard", () => {
     expect(settingsButton.className).toMatch(/focus-visible:/);
   });
 
-  it("foreground <circle> carries a stroke-dashoffset transition while running (polish)", () => {
+  it("ring container carries a --progress transition while running (polish)", () => {
     const { container } = render(<PomodoroCard />);
     act(() => {
       screen.getByRole("button", { name: /start|play/i }).click();
     });
-    const foreground = getRingSvg(container).querySelectorAll("circle")[1];
-    const className = foreground.getAttribute("class") ?? "";
-    const style = foreground.getAttribute("style") ?? "";
-    const hasTransitionClass = /transition-\[stroke-dashoffset\]/.test(
-      className,
-    );
-    const hasTransitionStyle = style.includes("stroke-dashoffset");
+    const ring = getRingContainer(container);
+    const className = ring.getAttribute("class") ?? "";
+    const style = ring.getAttribute("style") ?? "";
+    const hasTransitionClass = /transition-/.test(className);
+    const hasTransitionStyle =
+      /transition[^;]*(progress|background|mask|stroke-dashoffset)/.test(style);
     expect(hasTransitionClass || hasTransitionStyle).toBe(true);
   });
 
@@ -500,43 +505,68 @@ describe("PomodoroCard", () => {
 
   it("ring track is significantly dimmer than the remaining-time arc (Decision 8)", () => {
     const { container } = render(<PomodoroCard />);
-    const svg = getRingSvg(container);
-    const circles = svg.querySelectorAll("circle");
-    expect(circles.length).toBe(2);
-
-    const [track, foreground] = Array.from(circles);
+    const style = getRingStyle(container);
     // Track is the dimmer #111827 backdrop (Decision 8).
-    expect(track.getAttribute("stroke")).toBe("#111827");
-    // Foreground remaining-time arc keeps #3B82F6 (regression guardrail).
-    expect(foreground.getAttribute("stroke")).toBe("#3B82F6");
-
-    // No <circle> inside the ring SVG carries stroke="#1F2937".
-    for (const circle of Array.from(circles)) {
-      expect(circle.getAttribute("stroke")).not.toBe("#1F2937");
-    }
-    expect(svg.querySelectorAll('circle[stroke="#1F2937"]').length).toBe(0);
+    expect(style).toContain("#111827");
+    // Idle foreground is #3B82F6 (Decision 10).
+    expect(style).toContain("#3B82F6");
+    // The ring no longer renders #1F2937 — the track moved off that token.
+    expect(style).not.toContain("#1F2937");
   });
 
-  it("ring returns to four-segment idle pattern on reset", () => {
+  it("ring foreground color matches the active phase (Decision 10)", () => {
+    const { container } = render(<PomodoroCard />);
+
+    // idle -> #3B82F6
+    expect(getRingStyle(container)).toContain("#3B82F6");
+
+    // running (work) -> #F87171
+    act(() => {
+      screen.getByRole("button", { name: /start|play/i }).click();
+    });
+    expect(getRingStyle(container)).toContain("#F87171");
+    expect(getRingStyle(container)).not.toContain("#3B82F6");
+
+    // resting -> #34D399
+    advanceSeconds(1500);
+    expect(getTimeDisplay()).toHaveTextContent("05:00");
+    expect(getRingStyle(container)).toContain("#34D399");
+    expect(getRingStyle(container)).not.toContain("#F87171");
+
+    // paused-from-rest -> still #34D399
+    act(() => {
+      screen.getByRole("button", { name: /pause/i }).click();
+    });
+    expect(getRingStyle(container)).toContain("#34D399");
+
+    // reset -> idle -> #3B82F6
+    act(() => {
+      screen.getByRole("button", { name: /reset/i }).click();
+    });
+    expect(getRingStyle(container)).toContain("#3B82F6");
+    expect(getRingStyle(container)).not.toContain("#F87171");
+    expect(getRingStyle(container)).not.toContain("#34D399");
+  });
+
+  it("ring returns to flat idle ring on reset (--progress = 0, foreground = #3B82F6)", () => {
     const { container } = render(<PomodoroCard />);
     act(() => {
       screen.getByRole("button", { name: /start|play/i }).click();
     });
     advanceSeconds(10);
-    let foreground = getRingSvg(container).querySelectorAll("circle")[1];
-    expect(foreground.getAttribute("pathLength")).toBe("1");
+    expect(getRingProgress(container)).toBeGreaterThan(0);
+    expect(getRingStyle(container)).toContain("#F87171");
 
     act(() => {
       screen.getByRole("button", { name: /reset/i }).click();
     });
-    foreground = getRingSvg(container).querySelectorAll("circle")[1];
-    expect(foreground.getAttribute("pathLength")).toBeNull();
-    const dasharray = foreground.getAttribute("stroke-dasharray");
-    expect(dasharray).not.toBeNull();
-    const parts = dasharray!.split(/[\s,]+/).map(Number);
-    expect(parts.length).toBe(2);
-    expect(parts[0] / parts[1]).toBeCloseTo(2, 2);
-    const dashoffset = foreground.getAttribute("stroke-dashoffset");
-    expect(dashoffset === null || dashoffset === "0").toBe(true);
+    expect(getRingProgress(container)).toBe(0);
+    const style = getRingStyle(container);
+    expect(style).toContain("#3B82F6");
+    expect(style).toContain("#111827");
+    // Decision 9 / Regression Guardrail: no SVG/circle anywhere in ring.
+    expect(
+      getRingContainer(container).querySelectorAll("svg, circle").length,
+    ).toBe(0);
   });
 });
