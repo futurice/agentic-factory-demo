@@ -124,7 +124,7 @@ export function PomodoroCard() {
 
   return (
     <article
-      className="flex w-[410.66px] flex-col gap-[32px] rounded-[10px] border border-[#1E2939] bg-[#101828] p-[24px] font-[var(--font-inter)]"
+      className="flex w-[410.66px] flex-col gap-[32px] rounded-[10px] border border-[#1E2939] bg-[#101828] p-[24px] [font-family:var(--font-inter)]"
       aria-label="Pomodoro timer"
     >
       <header className="flex items-start justify-end">
@@ -158,7 +158,7 @@ export function PomodoroCard() {
           className="absolute top-1/2 left-1/2 h-[256px] w-[256px] -translate-x-1/2 -translate-y-1/2"
           style={
             {
-              "--progress": progress,
+              "--progress": String(progress),
               background: ringBackground,
               mask: ringMask,
               WebkitMask: ringMask,
@@ -166,10 +166,10 @@ export function PomodoroCard() {
             } as React.CSSProperties
           }
         />
-        <h2 className="relative text-center text-[12px] leading-[16px] font-[var(--font-inter)] text-[#99A1AF]">
+        <h2 className="relative text-center [font-family:var(--font-inter)] text-[12px] leading-[16px] text-[#99A1AF]">
           {phaseLabel}
         </h2>
-        <span className="relative text-[60px] leading-[60px] font-[var(--font-space-grotesk)] font-bold text-white">
+        <span className="relative [font-family:var(--font-space-grotesk)] text-[60px] leading-[60px] font-bold text-white">
           {formatMmSs(secondsRemaining)}
         </span>
       </div>
@@ -179,7 +179,7 @@ export function PomodoroCard() {
           aria-label="Timer settings"
           className="flex flex-col gap-[12px] rounded-[10px] border border-[#1E2939] bg-[#0B1220] p-[16px]"
         >
-          <label className="flex flex-col gap-[8px] text-[14px] leading-[20px] font-[var(--font-inter)] text-[#99A1AF]">
+          <label className="flex flex-col gap-[8px] [font-family:var(--font-inter)] text-[14px] leading-[20px] text-[#99A1AF]">
             <span>{`Work length — ${workMinutes} min`}</span>
             <input
               type="range"
@@ -192,7 +192,7 @@ export function PomodoroCard() {
               className="accent-[#3B82F6]"
             />
           </label>
-          <label className="flex flex-col gap-[8px] text-[14px] leading-[20px] font-[var(--font-inter)] text-[#99A1AF]">
+          <label className="flex flex-col gap-[8px] [font-family:var(--font-inter)] text-[14px] leading-[20px] text-[#99A1AF]">
             <span>{`Rest length — ${restMinutes} min`}</span>
             <input
               type="range"

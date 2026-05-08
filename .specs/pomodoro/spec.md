@@ -16,6 +16,8 @@ Amendment 2026-05-08 #4: the learner asked to "make changing the times reset the
 
 Amendment 2026-05-08 #5: the learner asked for `24px` padding on the pomodoro card, replacing the previous `p-[33px] pb-[32px]` from the Figma node `1:3` literals. Decision 13 pins the new value: the card root uses `p-[24px]` (24px on all four sides) — symmetric padding instead of the prior asymmetric pairing. No other Visual Contract literals change; the inner column `gap-[32px]`, the card width `~410.66px`, the background `#101828`, the `1px` border `#1E2939`, and the radius `10px` are all unaffected. The shell-level top padding (`32px`) and horizontal gutters (`58.5px`) owned by `src/app/layout.tsx` per `.specs/app-shell/spec.md` Decision 1 are likewise unaffected — Decision 13 amends the card's own padding only.
 
+Amendment 2026-05-08 #6: the user reported a hydration mismatch on the pomodoro widget; root causes were a numeric custom-property inline style (`"--progress": <number>`) and Tailwind's `font-[var(--font-…)]` shorthand on a CSS variable. Both are now defensively fixed in `PomodoroCard.tsx`; this amendment pins a regression guardrail and Gherkin scenarios so neither pattern re-enters the card.
+
 ### Decisions
 
 These decisions are pinned here so they are not reopened during build:
@@ -204,6 +206,9 @@ Each bullet below is a concrete, machine-verifiable polish criterion. "Feels pol
 - [ ] The settings panel uses one of the existing Figma-pinned background tokens (`#101828` or `#0B1220`) and the `#1E2939` divider/border token. Verified by `className` regex on the panel root: `/bg-\[#(101828|0B1220)\]/` and `/border-\[#1E2939\]/` (border may be on top or bottom).
 - [ ] No new color literal outside the existing palette `{#030712, #0B1220, #101828, #111827, #1E2939, #1F2937, #155DFC, #3B82F6, #51A2FF, #AD46FF, #99A1AF, #F87171, #34D399, #FFFFFF}` appears in `src/app/widgets/pomodoro/PomodoroCard.tsx`. Verified by `git grep -nE "#[0-9A-Fa-f]{3,8}" src/app/widgets/pomodoro/PomodoroCard.tsx` and reviewing each match against the palette. (Palette extended 2026-05-08 #2 by `#111827` per Decision 8; extended 2026-05-08 #3 by `#F87171` and `#34D399` per Decision 10. `#1F2937` retained because other elements may still reference it — only the ring track moved off it; `#3B82F6` retained because it is still the idle ring foreground, slider accent, and focus-ring color — only the active-phase ring foreground swapped to red/green.)
 - [ ] [Added 2026-05-08 #5, per Decision 13] The pomodoro card root applies `p-[24px]` (24px on all four sides) and does NOT apply the prior `p-[33px]` or `pb-[32px]` utilities. Verified by reading the card root element's `className` and asserting it matches `/p-\[24px\]/` AND does not match `/p-\[33px\]/` or `/pb-\[32px\]/`. Additionally, `git grep -nE "p-\[33px\]|pb-\[32px\]" src/app/widgets/pomodoro/PomodoroCard.tsx` returns no matches.
+- [ ] [Added 2026-05-08 #6] The card's React tree mounts without a `console.error` call matching `/Hydration|did not match|server rendered HTML didn't match/i`. Verified by a Vitest scenario that installs a `console.error` spy before rendering `<PomodoroCard />` and asserts no spy call's first string argument matches that regex.
+- [ ] [Added 2026-05-08 #6] The ring container's inline `--progress` value is a string matching `/^[01](\.\d+)?$/`. Verified by reading `ringContainer.style.getPropertyValue("--progress")` and asserting the returned value is a string matching that regex; additionally the React props passed to the ring container do not assign a JavaScript `number` to `--progress` (the source-level `style={{ "--progress": ... }}` value is a string, not a number).
+- [ ] [Added 2026-05-08 #6] No element in the rendered card has a `className` substring `font-[var(--font-`; the canonical form is `[font-family:var(--font-…)]`. Verified by a Vitest scenario that walks every element under the card root and asserts none of their `className` strings contain the substring `font-[var(--font-`, AND that every element whose font-family is set via a CSS variable instead carries `[font-family:var(--font-inter)]` or `[font-family:var(--font-space-grotesk)]`. Additionally, `git grep -nE "font-\[var\(--font-" src/app/widgets/pomodoro/PomodoroCard.tsx` returns no matches.
 
 #### Test rewrite authorization (C5)
 
@@ -237,6 +242,7 @@ Each bullet below is a concrete, machine-verifiable polish criterion. "Feels pol
 - [Added 2026-05-08 #3] The card no longer contains an `<h2>` element with text "Work Time" or "Rest Time". Verified by `queryByRole("heading", { name: /^(work|rest) time$/i })` returning `null` in every state. Re-introducing a top-of-card "Work Time" / "Rest Time" `<h2>` is a regression unless this guardrail is itself amended in a future dated block.
 - [Added 2026-05-08 #4, per Decision 12] Slider movement (Work or Rest) triggers the same end state as the Reset button: `state = idle`, `phase = "work"`, `secondsRemaining = workMinutes * 60`, ring `--progress = 0`, ring foreground = `#3B82F6`. Verified by a Vitest scenario that drives a running timer through a slider change and asserts the post-change state matches the post-Reset state (rendered DOM equivalence on the time display text, the start-button accessible name, the ring `--progress` value, and the ring foreground color). Reverting to a "slider changes apply at the next phase entry" or "slider changes do not modify the current `secondsRemaining`" behavior is a regression unless this guardrail is itself amended in a future dated block.
 - [Added 2026-05-08 #5, per Decision 13] Pomodoro card root has `p-[24px]` (Decision 13). Verified by checking the card root's `className` matches `/p-\[24px\]/` AND does not match `/p-\[33px\]/` or `/pb-\[32px\]/`. Reverting the card padding to `p-[33px] pb-[32px]` (or any other padding utility that does not resolve to symmetric `24px` on all four sides) is a regression unless this guardrail is itself amended in a future dated block.
+- [Added 2026-05-08 #6] The Pomodoro card mounts without a React hydration warning. Verified by a Vitest scenario that spies on `console.error` during the initial render of `<PomodoroCard />` and asserts no call's first argument is a string containing `"Hydration"`, `"did not match"`, or `"server rendered HTML didn't match"`. Two specific re-introduction patterns are explicitly flagged: (a) writing the ring's `--progress` inline-style as a JavaScript `number` rather than a `string` — Decision 9 already pins `--progress ∈ 0..1`; this guardrail additionally pins its serialization as a string at the React-style boundary; (b) using Tailwind's `font-[var(--font-…)]` shorthand for font-family on any element of the card — the canonical form on this card is the arbitrary-property `[font-family:var(--font-…)]` (matching the home route at `src/app/page.tsx`). Reverting either form is a regression unless this guardrail is itself amended in a future dated block.
 
 ### Scenarios
 
@@ -539,4 +545,23 @@ Scenario: Ring track is significantly dimmer than the remaining-time arc (Decisi
   Then the rendered ring track color resolves to "#111827"
   And the rendered ring foreground color resolves to the Decision-10 color for the active phase ("#3B82F6" in idle/completed, "#F87171" in running (work)/paused-from-work, "#34D399" in resting/paused-from-rest)
   And no element inside the ring container references "#1F2937" as a paint color
+
+Scenario: Pomodoro card mounts without a hydration warning
+  Given a console.error spy is installed
+  When <PomodoroCard /> is rendered for the first time
+  Then console.error has not been called with a message containing "Hydration"
+  And console.error has not been called with a message containing "did not match"
+  And console.error has not been called with a message containing "server rendered HTML didn't match"
+
+Scenario: Ring --progress is serialized as a string at the React-style boundary
+  Given the Pomodoro card has mounted in any state (idle, running, paused, resting, completed)
+  When the ring container element is queried
+  Then the inline style attribute's "--progress" value is a string in /^[01](\.\d+)?$/
+  And the ring container's React inline style does not assign a JavaScript number to "--progress"
+
+Scenario: Card font-family classes use the arbitrary-property form
+  Given the Pomodoro card has mounted
+  When the card root, the inner phase heading, the time display span, and any settings <label> are inspected
+  Then each element's className contains "[font-family:var(--font-inter)]" or "[font-family:var(--font-space-grotesk)]"
+  And no element's className contains the substring "font-[var(--font-"
 ```
