@@ -44,7 +44,7 @@ Architecture optimizes for **isolation, parallelism, and sensible Next.js conven
 - **`lib/` stays tiny and stable.** Only truly universal utilities (e.g. `cn()`, env access). Treat additions to `lib/` as a load-bearing decision, not a convenience.
 - **Sensible Next.js, no exotic layering.** App Router only, server components by default, `next/font` for fonts, Tailwind utilities first, `@/*` alias for imports. Do not introduce `features/`, `server/`, or other layered directories.
 - **Flat beats clever.** The repo shape is deliberately boring; the interesting part is what learners do inside their widget folder.
-- **`layout.tsx` owns shared page chrome only** — page background, container max-width (`1280px`), horizontal gutters (`58.5px`), top padding, and `next/font/google` variables. Widgets that need different chrome opt out at their own `page.tsx` by rendering an outer wrapper that overrides those utilities.
+- **`layout.tsx` owns shared page chrome only** — page background, container max-width (`1280px`), `<main>` padding `48px` on all four sides, and `next/font/google` variables. Widgets that need different chrome (full-bleed, non-dark background, different width) opt out at their own `page.tsx` by rendering an outer wrapper that overrides those utilities (e.g. `-m-[48px] bg-white min-h-screen`); this stays simple and only widgets that need to override pay the cost.
 
 ### Requirements in a practice platform
 

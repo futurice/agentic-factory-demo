@@ -748,6 +748,18 @@ describe("PomodoroCard", () => {
     ).toBeNull();
   });
 
+  it("card root applies symmetric p-[24px] padding (Decision 13)", () => {
+    const { container } = render(<PomodoroCard />);
+    const card = container.querySelector<HTMLElement>(
+      '[aria-label="Pomodoro timer"]',
+    );
+    expect(card).not.toBeNull();
+    const className = card!.className;
+    expect(className).toMatch(/p-\[24px\]/);
+    expect(className).not.toMatch(/p-\[33px\]/);
+    expect(className).not.toMatch(/pb-\[32px\]/);
+  });
+
   it("phase label heading precedes the MM:SS time display in DOM order (above the time)", () => {
     render(<PomodoroCard />);
     const heading = screen.getByRole("heading", { name: /^work$/i });

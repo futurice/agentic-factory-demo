@@ -124,7 +124,7 @@ export function PomodoroCard() {
 
   return (
     <article
-      className="flex w-[410.66px] flex-col gap-[32px] rounded-[10px] border border-[#1E2939] bg-[#101828] p-[33px] pb-[32px] font-[var(--font-inter)]"
+      className="flex w-[410.66px] flex-col gap-[32px] rounded-[10px] border border-[#1E2939] bg-[#101828] p-[24px] font-[var(--font-inter)]"
       aria-label="Pomodoro timer"
     >
       <header className="flex items-start justify-end">
