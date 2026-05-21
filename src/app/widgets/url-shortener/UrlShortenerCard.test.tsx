@@ -226,7 +226,7 @@ describe("UrlShortenerCard", () => {
     expect(copyBtn.className).toMatch(/bg-\[#1E2939\]/);
   });
 
-  it("font-family classes use the arbitrary-property form, not font-[var(--font-...)]", () => {
+  it("font-family classes use the arbitrary-property form, not the shorthand", () => {
     render(<UrlShortenerCard />);
     const { container } = render(<UrlShortenerCard />);
     const card = container.querySelector('[aria-label="URL shortener"]');
