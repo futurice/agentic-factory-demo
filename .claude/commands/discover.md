@@ -6,7 +6,7 @@ You are the orchestrator. **Do not write code, specs, or PBIs yourself.** Your j
 
 The pipeline is the **agentic double diamond**: Diamond 1 (Problem Space) and Diamond 2 (Solution Space), then a human-gated `/ship`. Auto-advance through every phase. Halt **only** on:
 
-- Objections from any gate (`/challenge`, `/challenge-plan`, `/review`).
+- Structural objections from any gate (`/challenge`, `/challenge-plan`, `/review`). Learner-decidable objections at `/challenge` and `/challenge-plan` are resolved inline via `AskUserQuestion` (see Diamond 1 step 2 and Diamond 2 step 5) rather than halting.
 - A `/build` 10-iteration cap with no progress.
 - The pre-`/ship` boundary.
 - Unparseable verdicts (no `PASS` line, no objection list).
@@ -49,7 +49,10 @@ If `$ARGUMENTS` is empty, ask the user for a signal rather than guessing.
 
 2. **Challenge.** Skill `challenge` with the intake path.
    - On `PASS`: ask the user for the `<domain>` name (one short line — needed for the spec folder), then auto-advance to Diamond 2.
-   - On objections: surface them and stop. Do not auto-loop back to Discover.
+   - On objections: classify each as **learner-decidable** (scope, persistence model, UI shape, semantics — the same vocabulary `analyst.md` uses for its defaults-bundle pattern) or **structural** (Constitution/architecture violation, missing evidence, scope bundling that needs a real rethink).
+     - **All learner-decidable → resolve inline, do not halt.** Phrase up to 4 objections as a single `AskUserQuestion` batch in this main thread. One question per objection; 2–4 concrete options each derived from the objection text; `header` ≤12 chars; users can always pick "Other" for free-text. Before asking, print a one-line preamble naming the objections being resolved so the user has context. When the answers come back, append them under a new `## Learner Decisions (resolving /challenge objections)` section at the **top** of the intake (right after the `# Topic:` heading) using the canonical shape from `.specs/_intake/pomodoro-unfinished-ring-settings-polish.md:1-30` — quote each decision verbatim, tag it to the objection number it resolves. Use the Edit tool; do not rewrite the file. Then re-skill `challenge` against the updated intake.
+     - **Loop cap: 2 ask-and-rerun cycles.** If `/challenge` still returns learner-decidable objections after the second cycle, stop and surface — repeated learner-decidable objections after two clarifying rounds means something structural is hiding behind the question shape, and the user should restart `/discover` with a sharper signal.
+     - **Any objection structural → surface and stop.** Do not ask the user. These need a real rethink, not a defaults pick.
 
 ## Diamond 2 — Solution Space
 
@@ -59,7 +62,9 @@ If `$ARGUMENTS` is empty, ask the user for a signal rather than guessing.
 4. Skill `plan` with `<domain>`.
 5. Skill `challenge-plan` with `<domain>`.
    - On `PASS`: auto-advance.
-   - On objections: surface them and stop. Suggest `/plan <domain>` again, or `/spec update <domain>` if the gap is in the spec.
+   - On objections: classify each as **learner-decidable** (scope of the PBI set, inclusion/deferral of optional scenarios, prioritization or sequencing choices — anything where the gap is a missing learner intent the spec can absorb) or **author-decidable** (atomicity, isolation, self-testability, boundedness, missing acceptance criteria, dependency ordering, file-scope overlaps — anything `@Lead` got wrong in the decomposition itself).
+     - **All learner-decidable → resolve inline, do not halt.** Same `AskUserQuestion` batch pattern as Diamond 1 step 2 (≤4 questions, 2–4 options each, `header` ≤12 chars, "Other" available). Print a one-line preamble. When answers come back, append them as new bullets under the existing `### Decisions` subsection of `.specs/<domain>/spec.md` (use Edit; do not rewrite the file) — quote the user verbatim, tag each to the objection number it resolves, and date-stamp the block. Then re-skill `plan <domain>` (so `@Lead` redecomposes against the updated spec) followed by `challenge-plan <domain>`. Cap at **2 cycles** of (ask → spec edit → re-plan → re-challenge-plan); if learner-decidable objections persist past cycle 2, stop and surface.
+     - **Any author-decidable → surface and stop.** Suggest `/plan <domain>` again, or `/spec update <domain>` if the gap is in the spec, not the decomposition.
 6. Determine the dependency-ordered PBI list from `.specs/<domain>/pbi/`. For each PBI in order:
    1. Skill `build` with `<pbi-id>`.
    2. Skill `review` with `<pbi-id>`.
