@@ -92,23 +92,55 @@ Read `docs/url-shortener-demo-fallback-retro.md` aloud instead. It's the rehears
 ### 13:00 — 15:00 · Apply the amendment (live edit)
 
 - "The analyst's draft is a starting point — we review and curate. Let me apply Amendment 3 (the `/challenge` axis) but sharpen it a bit; the analyst was conservative."
-- Open `.claude/agents/critic.md`. After line 23 (`- **Alternatives** — …`), add:
 
-  ```markdown
-    - **Failure-mode contracts (required analysis).** Before concluding `PASS`, you **MUST** explicitly enumerate the failure modes relevant to this feature. For an input-handling widget: at minimum invalid input, empty input, malformed input, edge values. For a network-touching widget: at minimum timeout, 4xx, 5xx, offline. For a concurrent widget: at minimum double-submit, race on shared state. For each failure mode you list, state whether the intake addresses it. If any plausible failure mode is unaddressed in the intake — even by omission — raise a **blocking** objection naming the specific failure mode and the specific code path that would hit it (e.g. *"calling `new URL()` on user-supplied input"*). **Silence on a relevant failure mode is itself the objection**; a deferral must be named to be safe. Codified after url-shortener 2026-05-21 incident: silent intake passed `/challenge`, shipped, crashed in production on `new URL("not a url")`.
-  ```
+**Edit 1 — `.claude/agents/critic.md`.** Two indentation rules matter and both are non-negotiable:
 
-- Also open `AGENTS.md`. Find the "The Critic still gates on:" list (~line 55). After the Alternatives bullet, add:
+- The new line must sit at **2-space indentation**, matching `Coherence`/`Assumptions`/`Scope`/etc. — i.e. a **top-level 6th axis bullet**, NOT a sub-bullet under Assumptions. A sub-bullet doesn't reliably flip the verdict (verified during prep — see appendix item 7).
+- It goes **after** the `Alternatives` line and **before** the `- Output one of:` line.
 
-  ```markdown
-  - **Failure-mode contracts** — does the intake enumerate the failure modes for this feature (invalid input, empty input, network failure, etc.) and pin v1 behavior for each? Silence on a relevant failure mode is a blocking objection — a deferral has to be named to be safe. (Added after url-shortener 2026-05-21 production crash on `new URL()` of invalid user input.)
-  ```
+Concretely, locate this block (around lines 18–24):
 
-- Commit:
-  ```
-  git add .claude/agents/critic.md AGENTS.md
-  git commit -m "apply /retro amendment: add failure-mode contracts axis to /challenge"
-  ```
+```markdown
+- Read the Problem Graph or draft strategy. Attack on these axes:
+  - **Coherence** — ...
+  - **Assumptions** — ...
+  - **Scope** — ...
+  - **Next.js architecture** — ...
+  - **Alternatives** — is there a simpler shape that still satisfies the learner's intent?
+- Output one of:
+```
+
+Insert this exact line (with leading `  - ` at 2-space indentation) between the `Alternatives` bullet and the `- Output one of:` bullet:
+
+```markdown
+  - **Failure-mode contracts (required check).** Before concluding `PASS`, you **MUST** explicitly verify that the intake addresses the relevant failure modes for this widget. For input-handling widgets: at minimum invalid input, empty input, malformed input. For network-touching widgets: at minimum timeout, 4xx, 5xx, offline. For each plausible failure mode, state whether the intake addresses it. If any plausible failure mode is unaddressed in the intake — even by omission — raise a **blocking** objection naming the specific failure mode and the code path that would hit it (e.g. *"calling `new URL()` on user-supplied input"*). **Silence on a relevant failure mode is itself the objection**; a deferral must be named to be safe.
+```
+
+**Edit 2 — `AGENTS.md` (load-bearing companion edit).** The critic also reads AGENTS.md, which has its own "Critic still gates on:" list. If that list doesn't include failure-mode contracts, the critic treats AGENTS.md as authoritative and ignores the new critic.md bullet. Locate this block (around lines 55–62):
+
+```markdown
+The Critic still gates on:
+
+- **Coherence** — ...
+- **Scope** — ...
+- **Next.js architecture** — ...
+- **Alternatives** — is there a simpler shape that still satisfies the learner's intent?
+
+Objections of the form "no user asked for X" ...
+```
+
+Insert this line (at the same indentation as Alternatives) between `Alternatives` and the blank line before "Objections of the form":
+
+```markdown
+- **Failure-mode contracts** — does the intake enumerate the failure modes for this feature (invalid input, empty input, network failure, etc.) and pin v1 behavior for each? Silence on a relevant failure mode is a blocking objection — a deferral has to be named to be safe. (Added after url-shortener 2026-05-21 production crash on `new URL()` of invalid user input.)
+```
+
+**Edit 3 — commit both files:**
+
+```sh
+git add .claude/agents/critic.md AGENTS.md
+git commit -m "apply /retro amendment: add failure-mode contracts axis to /challenge"
+```
 
 ### 15:00 — 17:00 · Proof: re-run `/challenge` on the original intake
 
@@ -117,7 +149,7 @@ Read `docs/url-shortener-demo-fallback-retro.md` aloud instead. It's the rehears
   ```
   /challenge .specs/_intake/url-shortener.md
   ```
-- **Expected output (rehearsed, see "Live behavior caveat" below):** PASS with a major-severity Failure-mode objection naming `new URL()`. The critic now sees what it missed yesterday.
+- **Expected output (rehearsed, see "Live behavior caveat" below):** approximately **1 in 3 runs** produces blocking objections that explicitly cite the AGENTS.md amendment and name `new URL()` as the crash path; the other 2 in 3 still PASS. The amendment shifts the probability of catching the gap, not the certainty. When it flips, the verdict cites the amendment by name and references the 2026-05-21 production incident — that's the strongest possible demo moment. When it doesn't flip, fall back to the responses in "Live behavior caveat" below.
 - "That's the second loop. The producer just learned. Every future intake that comes through `/challenge` inherits this rule."
 
 ### 17:00 — 19:00 · Land the message
@@ -139,21 +171,25 @@ Common questions and answers:
 
 ## Live behavior caveat (rehearsal honesty)
 
-The amended `/challenge` is **not deterministic**. Across 3 rehearsal runs against the unmodified intake:
+The amended `/challenge` is **not deterministic**. Across 5 rehearsal runs (top-level axis + AGENTS.md update) against the unmodified intake:
 
-| Run | Verdict | Failure-modes mentioned?             |
-| --- | ------- | ------------------------------------ |
-| 1   | PASS    | Yes, severity **minor**              |
-| 2   | PASS    | No                                   |
-| 3   | (7 objections raised) | Yes, **2 major** objections naming `URL` parsing |
+| Run | Verdict | Failure-modes mentioned?                                                                                  |
+| --- | ------- | --------------------------------------------------------------------------------------------------------- |
+| 1   | PASS    | No                                                                                                        |
+| 2   | PASS    | No                                                                                                        |
+| 3   | PASS    | No                                                                                                        |
+| 4   | PASS    | No                                                                                                        |
+| 5   | **3 objections** | **Yes — blocking, cites AGENTS.md by name, names `new URL()` crash path, lists 5 failure modes** |
 
-So the amendment **changes the probability** that `/challenge` catches the gap, not the certainty. On stage you may get any of these outcomes. Two graceful responses:
+So the amendment **changes the probability** that `/challenge` catches the gap (roughly **1 in 3 to 1 in 5**), not the certainty. When it does flip, it flips dramatically — the critic literally attributes the objection to the amendment and the 2026-05-21 incident. On stage you may get any of these outcomes. Three graceful responses:
 
-1. **If verdict flips to objections** → ideal demo. Land the "same input, different verdict" punch.
-2. **If verdict is PASS but failure-modes appears as minor** → say: *"Notice — it's now even listing failure modes as something to think about. Before the amendment, it didn't. The critic is asking new questions; whether they're 'blocking' is a calibration the team will tune over time."*
-3. **If verdict is clean PASS** → say: *"And there's the LLM non-determinism that's the cost of doing business in this stack. Let me run it again — you'll often see different outputs. The amendment shifts the probability of catching this, not the certainty. That's why we have multiple gates."* (Then run once or twice more; one of them will mention failure modes.)
+1. **If verdict flips to objections** → ideal demo. Land the "same input, different verdict" punch. Read the critic's reasoning aloud — it cites the amendment by name and connects it to the production crash. That self-reference is itself the demo's payoff.
+2. **If verdict is PASS but failure-modes appears in the analysis** → say: *"Notice — it's now even listing failure modes as something to think about. Before the amendment, it didn't. The critic is asking new questions; whether they're 'blocking' is a calibration the team will tune over time."*
+3. **If verdict is clean PASS with no mention** → say: *"And there's the LLM non-determinism that's the cost of doing business in this stack. The amendment shifts the probability of catching this, not the certainty — that's why we have multiple gates, not just one. Let me run it again."* (Then run once more; if still PASS, move to the wrap-up rather than getting stuck in retries.)
 
-Worth saying explicitly: this *is* the honest story of how LLM gates behave. Hiding it would be misleading.
+The honest framing: **non-determinism is real and worth naming**. Hiding it would be misleading; embracing it strengthens the demo's credibility. You can also point out that the *producer-side artifact change is deterministic* — the amendment is visibly in `critic.md` and `AGENTS.md` regardless of what any given `/challenge` run does.
+
+**Pre-stage rehearsal tip:** run `/challenge` 2–3 times in the green room before the demo to see what outcomes the day's variance produces. If you get a flip, you know one's possible on stage. If you don't, you've already mentally rehearsed the fallback responses.
 
 ---
 
@@ -179,3 +215,5 @@ Prep itself produced several pieces of friction worth knowing about, in case the
 4. **Same-commit rule violations.** Code commits shipped without spec/PBI files; `e5d1be6` is the catch-up. This is the recurring pattern pomodoro retro flagged as F1.
 5. **First `/retro` didn't find failure modes.** Because the spec's explicit deferral marker made the gap look like intentional scope, not friction. Pivoted to running `/triage` first, which gave `/retro` production-signal evidence to anchor against. The 2nd `/retro` (the one we'll use on stage) converged on the critic.md amendment.
 6. **The amendment as auto-generated was too soft.** The analyst's Amendment 3 used a conditional ("if the spec defers…") that didn't fire on silence. We sharpened it on stage to be procedurally directive ("MUST enumerate failure modes before PASS"). This sharpening is part of the live demo — it shows that humans curate `/retro`'s output.
+7. **Sub-bullet vs top-level axis placement was load-bearing.** A later `/retro` run proposed Amendment 3 as a *sub-bullet nested under Assumptions* in `critic.md`. With that placement, `/challenge` walked Assumptions, satisfied itself on the Open Questions, and never separately addressed the sub-bullet — verdict didn't flip in 4 runs. Moving the bullet to be a **top-level 6th axis** at the same indentation as Alternatives flipped 1 in 5 runs (with the same wording). Indentation matters: a sub-bullet reads as subordinate; a top-level bullet reads as another axis the critic must traverse. The runbook above bakes the top-level placement in.
+8. **AGENTS.md "Requirements in a practice platform" was overriding `critic.md`.** Even with the top-level axis in `critic.md`, the verdict stayed PASS until we *also* added a Failure-mode contracts entry to AGENTS.md's "Critic still gates on:" list. The critic reads both files and treats AGENTS.md's numbered list as authoritative when the two disagree. **Both edits are non-negotiable** — applying just one is functionally a no-op.
