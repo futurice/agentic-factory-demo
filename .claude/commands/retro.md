@@ -45,10 +45,27 @@ Skip retros on uneventful runs — fabricated findings are worse than silence.
 
 ## After the subagent returns
 
-1. Surface the retro path (`.specs/<domain>/retro.md`) and a one-line summary of the proposed amendments (count by target file).
+1. Read `.specs/<domain>/retro.md` and **surface each proposed amendment as a scannable card** in the main thread reply. The goal is to let the user evaluate the amendments without having to context-switch to the IDE. Use this shape per amendment:
+
+   ```
+   ### N — <target file path> · <one-line headline>
+
+   Rationale: <one sentence on which Friction item this resolves>
+
+   Diff:
+   <the diff block exactly as the analyst wrote it, fenced as a code block>
+   ```
+
+   - One card per amendment, in the order the analyst proposed them.
+   - Preserve the diff body verbatim. Do not paraphrase or truncate.
+   - If an amendment is the headline (the one most directly tied to the production signal or recurring friction), mark it with a `⭐ headline` tag next to the file path.
+   - End the surfacing with a one-line invitation: *"To apply, say e.g. 'apply #N' or 'apply #N sharpened to <your edit>'. I'll edit the files; you commit when ready."*
+
 2. Suggest the next step:
-   - If amendments are proposed → "Review `.specs/<domain>/retro.md`; apply the amendments you agree with in a single commit referencing this retro."
+   - If amendments are proposed → the invitation in step 1 already covers this. Also remind the user the retro is on disk at `.specs/<domain>/retro.md` for later reference.
    - If no amendments → "No retro action needed. Ready for the next widget — `/discover <signal>`."
+
+3. **Do not auto-apply.** Wait for the user to name which amendments to apply and how (verbatim or with their edits). When they do, edit the target files directly (Edit/Write) and stop short of committing — the user owns the commit so the message references the retro consciously.
 
 ## Boundaries
 

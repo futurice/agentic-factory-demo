@@ -33,7 +33,22 @@ Dispatch the Analyst subagent (`subagent_type: analyst`) with this prompt:
 
 ## Step 2 — Branch on the route
 
-- **Spec amendment** or **Regression guardrail**: stop. Surface the routing decision and the draft diff to the user. Suggest `/spec update <domain>`. The user takes it from there.
+- **Spec amendment** or **Regression guardrail**: stop. **Surface the routing decision and the draft diff as a scannable card** so the user can evaluate without context-switching to the IDE. Use this shape:
+
+  ```
+  ## Triage routed: <Spec amendment | Regression guardrail> — `<domain>`
+
+  Signal: <one-line restatement of the signal>
+  Target: <path to the spec file the analyst proposes editing>
+  Rationale: <one sentence on which spec clause this contradicts or extends>
+
+  Diff:
+  <the diff block exactly as the analyst wrote it, fenced as a code block>
+  ```
+
+  - Preserve the diff body verbatim. Do not paraphrase or truncate.
+  - End with a one-line invitation: *"To apply, say 'apply' (verbatim) or 'apply with <your edit>'. I'll edit the spec; you run `/spec update <domain>` afterwards if you want Lead to re-validate, and commit when ready."*
+  - **Do not auto-apply.** Wait for the user to name the action. When they do, edit the target file directly (Edit/Write) and stop short of committing — the user owns the commit.
 
 - **New intake**: auto-chain into the pipeline. Take the intake path the Analyst wrote, then follow the **same orchestration as `/discover`** starting from its Step 2 (Challenge):
   1. Skill `challenge` with the intake path.
