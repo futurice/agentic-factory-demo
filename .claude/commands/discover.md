@@ -66,11 +66,11 @@ If `$ARGUMENTS` is empty, ask the user for a signal rather than guessing.
      - **All learner-decidable → resolve inline, do not halt.** Same `AskUserQuestion` batch pattern as Diamond 1 step 2 (≤4 questions, 2–4 options each, `header` ≤12 chars, "Other" available). Print a one-line preamble. When answers come back, append them as new bullets under the existing `### Decisions` subsection of `.specs/<domain>/spec.md` (use Edit; do not rewrite the file) — quote the user verbatim, tag each to the objection number it resolves, and date-stamp the block. Then re-skill `plan <domain>` (so `@Lead` redecomposes against the updated spec) followed by `challenge-plan <domain>`. Cap at **2 cycles** of (ask → spec edit → re-plan → re-challenge-plan); if learner-decidable objections persist past cycle 2, stop and surface.
      - **Any author-decidable → surface and stop.** Suggest `/plan <domain>` again, or `/spec update <domain>` if the gap is in the spec, not the decomposition.
 6. Determine the dependency-ordered PBI list from `.specs/<domain>/pbi/`. For each PBI in order:
-   1. Skill `build` with `<pbi-id>`.
-   2. Skill `review` with `<pbi-id>`.
-      - On `PASS`: continue to the next PBI.
-      - On violations: re-skill `build` with the same PBI. Do **not** add a retry loop on top — `/build` already enforces the 10-iteration cap. If `/build` exits at the cap without progress, stop and surface.
+   1. Skill `build` with `<pbi-id>`. `/build` now runs Phase 1 (Dev + deterministic gates) and Phase 2 (Critic review) in sequence, so a single skill call covers both. Do **not** also skill `review` — that would re-run the Critic against the same diff.
+      - On Phase 2 `PASS`: continue to the next PBI.
+      - On Phase 2 violations: `/build` stops and surfaces by design. Do not auto-retry — surface the verdict to the user and stop. The judgment whether to re-run `/build`, `/spec update <domain>`, or accept the violation belongs to the user (re-running on critic feedback risks "fixing" a real architectural concern by silencing it).
       - On `SPEC AMBIGUOUS`: stop. Suggest `/spec update <domain>`.
+      - On Phase 1 Ralph cap: stop and surface (same as before).
 
 ## Pre-`/ship` boundary (only human pause)
 
