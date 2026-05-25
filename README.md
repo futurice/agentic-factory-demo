@@ -1,4 +1,4 @@
-# ai-learning-path-agentic-demo
+# Agentic Factory Demo
 
 A minimal Next.js 16 + React 19 app used as a sandbox for demonstrating an **agentic software factory** workflow inside Claude Code.
 
