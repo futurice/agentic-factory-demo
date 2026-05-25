@@ -45,21 +45,66 @@ Skip retros on uneventful runs — fabricated findings are worse than silence.
 
 ## After the subagent returns
 
-1. Read `.specs/<domain>/retro.md` and **surface each proposed amendment as a scannable card** in the main thread reply. The goal is to let the user evaluate the amendments without having to context-switch to the IDE. Use this shape per amendment:
+1. Read `.specs/<domain>/retro.md` and **surface the proposed amendments as a scannable card** in the main thread reply. The goal is to let the user evaluate the amendments without having to context-switch to the IDE. The card has four parts — header, amendment table, per-amendment unified diffs, producer-impact footer — followed by the apply invitation. The shape parallels `/triage`'s spec-amendment card so users can scan both with the same eyes.
 
-   ```
-   ### N — <target file path> · <one-line headline>
+   ### Card template
 
-   Rationale: <one sentence on which Friction item this resolves>
+   `````
+   ## 🔄 Retro distilled: `<domain>` — <N> amendment(s) proposed
 
-   Diff:
-   <the diff block exactly as the analyst wrote it, fenced as a code block>
-   ```
+   > **Pipeline** — <one-line summary: PBI count, /build cap hits, /review rejection count>
+   > **Retro on disk** — `.specs/<domain>/retro.md`
+   > **Headline finding** — <one-sentence summary of the friction most worth fixing>
 
-   - One card per amendment, in the order the analyst proposed them.
-   - Preserve the diff body verbatim. Do not paraphrase or truncate.
-   - If an amendment is the headline (the one most directly tied to the production signal or recurring friction), mark it with a `⭐ headline` tag next to the file path.
-   - End the surfacing with a one-line invitation: *"To apply, say e.g. 'apply #N' or 'apply #N sharpened to <your edit>'. I'll edit the files; you commit when ready."*
+   ---
+
+   ### Proposed amendments
+
+   | # | Target | Type | Headline |
+   |---|--------|------|----------|
+   | 1 | `<path>` | <➕ add / ✏️ edit / ♻️ replace / ➖ remove> | <one-line headline> <⭐ if headline> |
+   | 2 | … | … | … |
+
+   ---
+
+   ### ① `<target file path>` <⭐ if headline>
+
+   **Resolves** — <one sentence on which Friction item this addresses, with citation: line, commit, or iteration count>
+
+   ````diff
+   - <old line>
+   + <new line>
+   ````
+
+   ### ② `<target file path>`
+
+   **Resolves** — …
+
+   ````diff
+   …
+   ````
+
+   <repeat ③ ④ … for each amendment in the table>
+
+   ---
+
+   ### 🔎 Producer impact
+
+   - **Personas affected:** <which agents change behavior, or "none — Constitution/template only">
+   - **Gates affected:** <which slash-commands/gates see different verdicts as a result>
+   - **Repo surface:** <count and rough scope of files touched if all amendments are applied>
+
+   ---
+
+   **To apply** — say e.g. `apply #1`, `apply #1 sharpened to <your edit>`, or `apply all`. I'll edit the files; you commit when ready.
+   `````
+
+   ### Rules for filling the template
+   - **The amendment table is required.** One row per amendment, even when only one is proposed — the table is the scanning surface. The `#` column must match the circled-number headings (①②③…) below.
+   - **Use unified-diff fences (` ```diff `) per amendment**, not Old:/New: blocks. The analyst's retro on disk may use either form; reformatting to unified diff is allowed. **Changing the textual content of any `+`/`-` line is not.** If an amendment is too structural to express as a unified diff (e.g. "split this file into two"), surface it verbatim in a plain ` ``` ` block and note the reason.
+   - **Headline marker (`⭐`)** goes in both the table row and the card heading for the one amendment most directly tied to the production signal or recurring friction. At most one headline per retro; zero is also valid.
+   - **Producer-impact footer is mandatory.** Its job is to make second-order effects (which gate starts behaving differently, which persona's instructions shift) visible before the user types `apply`. If the impact on a line is genuinely "none," write that — don't omit the line.
+   - Preserve the order of amendments from the on-disk retro; the table and circled numbers reflect that order.
 
 2. Suggest the next step:
    - If amendments are proposed → the invitation in step 1 already covers this. Also remind the user the retro is on disk at `.specs/<domain>/retro.md` for later reference.

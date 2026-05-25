@@ -33,21 +33,61 @@ Dispatch the Analyst subagent (`subagent_type: analyst`) with this prompt:
 
 ## Step 2 — Branch on the route
 
-- **Spec amendment** or **Regression guardrail**: stop. **Surface the routing decision and the draft diff as a scannable card** so the user can evaluate without context-switching to the IDE. Use this shape:
+- **Spec amendment** or **Regression guardrail**: stop. **Surface the routing decision and the draft diff as a scannable card** so the user can evaluate without context-switching to the IDE. The card has four parts — header, change table, per-hunk unified diffs, impact footer — followed by the apply invitation.
 
+  ### Card template
+
+  ````
+  ## 🔄 Triage routed: **<Spec amendment | Regression guardrail>** — `<domain>`
+
+  > **Signal** — <one-line restatement of the signal>
+  > **Target** — <path to the spec file the analyst proposes editing>
+  > **Why** — <one sentence on which spec clause this contradicts or extends, citing line numbers>
+
+  ---
+
+  ### What changes, at a glance
+
+  | # | Section | Change | Line(s) |
+  |---|---------|--------|---------|
+  | 1 | <spec section name> | <➕ add / ✏️ edit / ♻️ replace / ➖ remove> <verb phrase> | <line range> |
+  | 2 | … | … | … |
+
+  ---
+
+  ### ① <Section name> — *<short locator, e.g. "add Decision 2" or "L95">*
+
+  ```diff
+  - <old line removed verbatim from spec>
+  + <new line as proposed by analyst>
   ```
-  ## Triage routed: <Spec amendment | Regression guardrail> — `<domain>`
 
-  Signal: <one-line restatement of the signal>
-  Target: <path to the spec file the analyst proposes editing>
-  Rationale: <one sentence on which spec clause this contradicts or extends>
+  ### ② <Section name> — *<locator>*
 
-  Diff:
-  <the diff block exactly as the analyst wrote it, fenced as a code block>
+  ```diff
+  …
   ```
 
-  - Preserve the diff body verbatim. Do not paraphrase or truncate.
-  - End with a one-line invitation: *"To apply, say 'apply' (verbatim) or 'apply with <your edit>'. I'll edit the spec; you run `/spec update <domain>` afterwards if you want Lead to re-validate, and commit when ready."*
+  <repeat ③ ④ … for each hunk in the table>
+
+  ---
+
+  ### 🔎 Impact
+
+  - **Behavioral:** <one line: what the user-visible behavior change is>
+  - **Test surface:** <one line: new/changed scenarios, what stays untouched>
+  - **Constitution:** <one line: confirm no cross-widget reach, no `lib/` churn, widget still deletable in one `rm -rf` — or flag if any of these are at risk>
+
+  ---
+
+  **To apply** — say `apply` (verbatim) or `apply with <your edit>`. I'll edit the spec; run `/spec update <domain>` afterwards if you want Lead to re-validate. You own the commit.
+  ````
+
+  ### Rules for filling the template
+  - **The change table is required.** One row per hunk. If there's only one hunk, still emit a one-row table — the table is the scanning surface.
+  - **Use unified-diff fences (` ```diff `) per hunk**, not Old:/New: blocks. The analyst returns Old/New; you reformat to unified diff. Reformatting is allowed; **changing the spec content of any `+` or `-` line is not**. If the analyst's Old/New blocks are ambiguous to reformat, surface them verbatim in a plain ` ``` ` block under that hunk's heading and note the ambiguity.
+  - **Circled-number headings (①②③④…)** mark each hunk and must match the table's `#` column so the reader can jump between them.
+  - **Impact footer is mandatory** even when each line is "no change" — its job is to make architectural side-effects (or their absence) explicit before the user types `apply`.
   - **Do not auto-apply.** Wait for the user to name the action. When they do, edit the target file directly (Edit/Write) and stop short of committing — the user owns the commit.
 
 - **New intake**: auto-chain into the pipeline. Take the intake path the Analyst wrote, then follow the **same orchestration as `/discover`** starting from its Step 2 (Challenge):
