@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RosterTable from "./RosterTable";
@@ -24,6 +24,16 @@ describe("No hydration mismatch on mount", () => {
   it("does not call console.error when RosterTable is mounted", () => {
     render(<RosterTable />);
     // The afterEach hook asserts consoleErrorSpy was not called.
+  });
+});
+
+// ---------------------------------------------------------------------------
+// EMPLOYEES fixture invariants
+// ---------------------------------------------------------------------------
+describe("EMPLOYEES fixture invariants", () => {
+  test("all employee ids are unique", () => {
+    const ids = EMPLOYEES.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
 
