@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { EMPLOYEES, Employee } from "./employees";
 import Avatar from "./Avatar";
@@ -64,9 +64,8 @@ export default function RosterTable() {
             const manager = getManager(employee.managerId);
 
             return (
-              <>
+              <Fragment key={employee.id}>
                 <tr
-                  key={employee.id}
                   className={`h-[56px] border-t border-[#1E2939] transition-colors ${
                     isExpanded
                       ? "bg-[#1E2939]"
@@ -113,7 +112,7 @@ export default function RosterTable() {
                   </td>
                 </tr>
                 {isExpanded && (
-                  <tr key={`${employee.id}-detail`}>
+                  <tr>
                     <td
                       id={detailId}
                       colSpan={5}
@@ -159,7 +158,7 @@ export default function RosterTable() {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             );
           })}
         </tbody>
