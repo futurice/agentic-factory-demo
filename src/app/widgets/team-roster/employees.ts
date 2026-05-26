@@ -50,12 +50,3 @@ export const EMPLOYEES: Employee[] = [
     managerId: "emp-1",
   },
 ];
-
-// Compile-time uniqueness check: if any id is duplicated the mapped type would
-// produce `never` at the duplicate key, causing a TypeScript error.
-type _UniqueIds<T extends readonly Employee[]> = {
-  [E in T[number] as E["id"]]: E;
-};
-// Trigger the check by referencing the type against the concrete array.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type _Check = _UniqueIds<typeof EMPLOYEES>;
